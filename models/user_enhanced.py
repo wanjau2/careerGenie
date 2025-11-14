@@ -294,6 +294,95 @@ class EnhancedUser:
         return result.modified_count > 0
 
     @staticmethod
+    def complete_onboarding_with_data(user_id, data):
+        """
+        Complete onboarding and save all user data from the onboarding flow.
+
+        This method saves:
+        - Job title to profile.jobTitle
+        - Skills to profile.skills
+        - Experience level to profile.experience
+        - Location to profile.location
+        - Job preferences (jobTypes, salary range) to preferences
+        - Optional bio to profile.bio
+
+        Args:
+            user_id: User ID (string or ObjectId)
+            data: Dictionary with onboarding data from frontend
+                {
+                    'jobTitle': str,
+                    'skills': list[str],
+                    'experience': str,
+                    'location': {'city': str, 'formatted': str},
+                    'preferences': {
+                        'jobTypes': list[str],
+                        'salaryMin': float,
+                        'salaryMax': float,
+                        'autoApplyEnabled': bool
+                    },
+                    'bio': str (optional)
+                }
+
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        users = get_users_collection()
+
+        if isinstance(user_id, str):
+            user_id = ObjectId(user_id)
+
+        # Build update document from frontend data
+        update_doc = {
+            'onboardingCompleted': True,
+            'onboardingStep': -1,
+            'updatedAt': datetime.utcnow()
+        }
+
+        # Map frontend data to user profile structure
+        if 'jobTitle' in data:
+            update_doc['profile.jobTitle'] = data['jobTitle']
+
+        if 'skills' in data:
+            update_doc['profile.skills'] = data['skills']
+
+        if 'experience' in data:
+            update_doc['profile.experience'] = data['experience']
+
+        if 'location' in data:
+            update_doc['profile.location'] = data['location']
+
+        if 'bio' in data:
+            update_doc['profile.bio'] = data['bio']
+
+        # Update job preferences
+        if 'preferences' in data:
+            prefs = data['preferences']
+
+            if 'jobTypes' in prefs:
+                update_doc['preferences.jobTypes'] = prefs['jobTypes']
+
+            if 'salaryMin' in prefs or 'salaryMax' in prefs:
+                # Update salary expectations in profile
+                salary_doc = {}
+                if 'salaryMin' in prefs and prefs['salaryMin'] is not None:
+                    salary_doc['min'] = prefs['salaryMin']
+                if 'salaryMax' in prefs and prefs['salaryMax'] is not None:
+                    salary_doc['max'] = prefs['salaryMax']
+
+                if salary_doc:
+                    update_doc['profile.expectedSalary'] = salary_doc
+
+            if 'autoApplyEnabled' in prefs:
+                update_doc['preferences.autoApplyEnabled'] = prefs['autoApplyEnabled']
+
+        result = users.update_one(
+            {'_id': user_id},
+            {'$set': update_doc}
+        )
+
+        return result.modified_count > 0
+
+    @staticmethod
     def get_skill_gaps(user_id):
         """
         Get identified skill gaps for user.

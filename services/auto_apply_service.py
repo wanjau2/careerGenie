@@ -228,9 +228,19 @@ class AutoApplyService:
                 # If requirements is a string, split it
                 job_requirements = [req.strip() for req in job_requirements.split(',')]
 
-            # Get user's current skills
+            # Get user's current skills from profile or top-level
             user_skills = []
-            if 'skills' in user_profile:
+
+            # Check profile.skills first (from onboarding)
+            profile = user_profile.get('profile', {})
+            if profile.get('skills'):
+                skills_data = profile['skills']
+                user_skills = [
+                    skill.get('name', skill) if isinstance(skill, dict) else skill
+                    for skill in skills_data
+                ]
+            # Fallback to top-level skills (legacy)
+            elif 'skills' in user_profile:
                 user_skills = [
                     skill.get('name', skill) if isinstance(skill, dict) else skill
                     for skill in user_profile.get('skills', [])

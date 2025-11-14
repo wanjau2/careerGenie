@@ -103,14 +103,27 @@ def complete_onboarding_step(step):
 @jwt_required()
 def complete_onboarding():
     """
-    Mark onboarding as completed.
+    Mark onboarding as completed and save all onboarding data.
+
+    Expected request body:
+    - jobTitle: User's desired job title
+    - skills: List of user skills
+    - experience: Experience level
+    - location: Location object {city, formatted}
+    - preferences: Preferences object {jobTypes, salaryMin, salaryMax, autoApplyEnabled}
+    - bio: Optional bio/summary
 
     Returns:
         JSON with completion status
     """
     user_id = get_jwt_identity()
+    data = request.get_json()
 
-    success = EnhancedUser.complete_onboarding(user_id)
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+
+    # Save all onboarding data and mark as complete
+    success = EnhancedUser.complete_onboarding_with_data(user_id, data)
 
     if not success:
         return jsonify({'error': 'Failed to complete onboarding'}), 400

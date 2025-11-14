@@ -73,13 +73,17 @@ def get_jobs():
         # Start with user preferences if enabled
         if use_preferences:
             preferences = user.get('preferences', {})
+            profile = user.get('profile', {})
+
             filters = {
                 'jobTypes': preferences.get('jobTypes', []),
                 'industries': preferences.get('industries', []),
                 'roleLevels': preferences.get('roleLevels', []),
                 'remoteOnly': preferences.get('remoteOnly', False)
             }
-            expected_salary = preferences.get('expectedSalary', {})
+
+            # Get salary expectations from preferences first, fallback to profile
+            expected_salary = preferences.get('expectedSalary') or profile.get('expectedSalary', {})
             if expected_salary:
                 filters['minSalary'] = expected_salary.get('min')
                 filters['maxSalary'] = expected_salary.get('max')
@@ -140,11 +144,29 @@ def get_jobs():
 
         # Calculate match scores
         from utils.helpers import calculate_match_score
+
+        # Combine preferences and profile data for matching
         preferences = user.get('preferences', {})
+        profile = user.get('profile', {})
+
+        # Merge profile data into preferences for matching
+        user_data = {**preferences}
+
+        # Add skills from profile if not in preferences
+        if 'skills' not in user_data and profile.get('skills'):
+            user_data['skills'] = profile['skills']
+
+        # Add location from profile if not in preferences
+        if 'location' not in user_data and profile.get('location'):
+            user_data['location'] = profile['location']
+
+        # Add salary expectations from profile if not in preferences
+        if 'expectedSalary' not in user_data and profile.get('expectedSalary'):
+            user_data['expectedSalary'] = profile['expectedSalary']
 
         jobs_with_scores = []
         for job in jobs:
-            match_score = calculate_match_score(preferences, job)
+            match_score = calculate_match_score(user_data, job)
             if match_score >= min_match_score:
                 jobs_with_scores.append({
                     'job': job,
@@ -431,7 +453,11 @@ def get_swipe_history():
             job = jobs_collection.find_one({'_id': swipe['jobId']})
             if job:
                 swipe_data = serialize_document(swipe)
-                swipe_data['job'] = serialize_document(job)
+                # Frontend expects 'jobData' not 'job'
+                swipe_data['jobData'] = serialize_document(job)
+                # Frontend expects 'swipedAt' not 'timestamp'
+                if 'timestamp' in swipe_data:
+                    swipe_data['swipedAt'] = swipe_data['timestamp']
                 result.append(swipe_data)
 
         # Get total count
