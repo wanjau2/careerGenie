@@ -69,3 +69,7 @@ test_*.sh
 # Celery
 celerybeat-schedule*
 celerybeat.pid
+
+# Documentation files (except README)
+*.md
+!README.md
