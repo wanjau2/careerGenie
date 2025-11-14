@@ -209,7 +209,9 @@ def get_recommended_courses():
                             title = job.get('title', '').lower()
 
                             # Common job title keywords to skills mapping
+                            # Supports ALL fields: tech, healthcare, business, education, trades, etc.
                             title_to_skills = {
+                                # Tech/Programming
                                 'python': ['Python', 'Django', 'Flask'],
                                 'javascript': ['JavaScript', 'React', 'Node.js'],
                                 'java': ['Java', 'Spring Boot', 'Maven'],
@@ -221,6 +223,56 @@ def get_recommended_courses():
                                 'designer': ['Figma', 'Adobe XD', 'UI/UX Design'],
                                 'product': ['Product Management', 'Agile', 'Analytics'],
                                 'mobile': ['React Native', 'Flutter', 'Swift', 'Kotlin'],
+
+                                # Healthcare
+                                'nurse': ['Nursing', 'Patient Care', 'Medical Terminology', 'First Aid'],
+                                'nursing': ['Nursing', 'Patient Care', 'Medical Terminology', 'First Aid'],
+                                'doctor': ['Medicine', 'Diagnosis', 'Medical Ethics', 'Anatomy'],
+                                'medical': ['Medical Terminology', 'Healthcare', 'Patient Care'],
+                                'healthcare': ['Healthcare Management', 'Patient Care', 'Medical Ethics'],
+                                'pharmacy': ['Pharmacology', 'Drug Interactions', 'Patient Counseling'],
+                                'dental': ['Dentistry', 'Oral Health', 'Patient Care'],
+                                'therapy': ['Physical Therapy', 'Occupational Therapy', 'Patient Care'],
+
+                                # Business & Finance
+                                'accountant': ['Accounting', 'Financial Reporting', 'Tax', 'Excel'],
+                                'accounting': ['Accounting', 'Financial Reporting', 'Tax', 'Excel'],
+                                'finance': ['Financial Analysis', 'Budgeting', 'Investment', 'Excel'],
+                                'business': ['Business Management', 'Strategy', 'Operations'],
+                                'management': ['Management', 'Leadership', 'Team Building'],
+                                'sales': ['Sales Techniques', 'Negotiation', 'CRM', 'Communication'],
+                                'marketing': ['Digital Marketing', 'SEO', 'Social Media', 'Content Marketing'],
+                                'hr': ['Human Resources', 'Recruitment', 'Employee Relations'],
+                                'operations': ['Operations Management', 'Process Improvement', 'Logistics'],
+
+                                # Education
+                                'teacher': ['Teaching', 'Classroom Management', 'Lesson Planning', 'Assessment'],
+                                'teaching': ['Teaching', 'Classroom Management', 'Lesson Planning', 'Assessment'],
+                                'education': ['Educational Psychology', 'Curriculum Development', 'Teaching Methods'],
+                                'tutor': ['Tutoring', 'Subject Expertise', 'Student Engagement'],
+                                'professor': ['Teaching', 'Research', 'Academic Writing', 'Mentoring'],
+
+                                # Trades & Services
+                                'electrician': ['Electrical Wiring', 'Safety Codes', 'Troubleshooting'],
+                                'plumber': ['Plumbing', 'Pipe Fitting', 'Water Systems'],
+                                'mechanic': ['Automotive Repair', 'Diagnostics', 'Engine Maintenance'],
+                                'carpenter': ['Carpentry', 'Blueprint Reading', 'Construction'],
+                                'construction': ['Construction Management', 'Safety', 'Project Planning'],
+                                'hvac': ['HVAC Systems', 'Climate Control', 'Maintenance'],
+
+                                # Creative & Arts
+                                'graphic': ['Graphic Design', 'Adobe Creative Suite', 'Branding'],
+                                'photographer': ['Photography', 'Photo Editing', 'Composition'],
+                                'video': ['Video Editing', 'Adobe Premiere', 'Cinematography'],
+                                'writer': ['Creative Writing', 'Copywriting', 'Editing'],
+                                'artist': ['Art', 'Drawing', 'Digital Art', 'Illustration'],
+
+                                # Customer Service & Retail
+                                'customer': ['Customer Service', 'Communication', 'Problem Solving'],
+                                'retail': ['Retail Management', 'Sales', 'Customer Service', 'Inventory'],
+                                'hospitality': ['Hospitality Management', 'Customer Service', 'Event Planning'],
+                                'chef': ['Culinary Arts', 'Food Safety', 'Menu Planning', 'Cooking'],
+                                'cook': ['Cooking', 'Food Preparation', 'Kitchen Management'],
                             }
 
                             for keyword, skill_list in title_to_skills.items():
@@ -238,8 +290,10 @@ def get_recommended_courses():
                 experience = profile.get('experience', '').lower()
 
                 # Map experience level to appropriate skills
+                # Supports ALL fields: tech, healthcare, business, education, trades, etc.
                 area_skills = []
 
+                # Tech & Engineering
                 if any(word in job_title or word in experience for word in ['software', 'developer', 'engineer', 'programmer']):
                     area_skills = ['Python', 'JavaScript', 'Git', 'SQL', 'REST APIs']
                 elif any(word in job_title or word in experience for word in ['data', 'analyst', 'scientist']):
@@ -248,21 +302,81 @@ def get_recommended_courses():
                     area_skills = ['Figma', 'Adobe XD', 'UI/UX Design', 'Prototyping']
                 elif any(word in job_title or word in experience for word in ['product', 'manager']):
                     area_skills = ['Product Management', 'Agile', 'Analytics', 'User Research']
+
+                # Business & Marketing
                 elif any(word in job_title or word in experience for word in ['marketing', 'digital']):
                     area_skills = ['Digital Marketing', 'SEO', 'Google Analytics', 'Content Marketing']
                 elif any(word in job_title or word in experience for word in ['sales', 'business']):
                     area_skills = ['Sales', 'CRM', 'Communication', 'Negotiation']
+                elif any(word in job_title or word in experience for word in ['account', 'finance', 'financial']):
+                    area_skills = ['Accounting', 'Financial Analysis', 'Excel', 'Budgeting']
+                elif any(word in job_title or word in experience for word in ['hr', 'human resources', 'recruitment']):
+                    area_skills = ['Human Resources', 'Recruitment', 'Employee Relations', 'Communication']
+
+                # Healthcare
+                elif any(word in job_title or word in experience for word in ['nurse', 'nursing', 'medical']):
+                    area_skills = ['Nursing', 'Patient Care', 'Medical Terminology', 'First Aid']
+                elif any(word in job_title or word in experience for word in ['doctor', 'physician', 'healthcare']):
+                    area_skills = ['Medicine', 'Patient Care', 'Medical Ethics', 'Healthcare Management']
+                elif any(word in job_title or word in experience for word in ['pharmacy', 'pharmacist']):
+                    area_skills = ['Pharmacology', 'Drug Interactions', 'Patient Counseling']
+                elif any(word in job_title or word in experience for word in ['therapy', 'therapist', 'physical therapy']):
+                    area_skills = ['Physical Therapy', 'Patient Care', 'Rehabilitation']
+
+                # Education
+                elif any(word in job_title or word in experience for word in ['teacher', 'teaching', 'educator']):
+                    area_skills = ['Teaching', 'Classroom Management', 'Lesson Planning', 'Assessment']
+                elif any(word in job_title or word in experience for word in ['tutor', 'tutoring']):
+                    area_skills = ['Tutoring', 'Subject Expertise', 'Student Engagement']
+                elif any(word in job_title or word in experience for word in ['professor', 'academic', 'lecturer']):
+                    area_skills = ['Teaching', 'Research', 'Academic Writing', 'Mentoring']
+
+                # Trades & Construction
+                elif any(word in job_title or word in experience for word in ['electrician', 'electrical']):
+                    area_skills = ['Electrical Wiring', 'Safety Codes', 'Troubleshooting']
+                elif any(word in job_title or word in experience for word in ['plumber', 'plumbing']):
+                    area_skills = ['Plumbing', 'Pipe Fitting', 'Water Systems']
+                elif any(word in job_title or word in experience for word in ['mechanic', 'automotive']):
+                    area_skills = ['Automotive Repair', 'Diagnostics', 'Engine Maintenance']
+                elif any(word in job_title or word in experience for word in ['carpenter', 'construction', 'builder']):
+                    area_skills = ['Carpentry', 'Construction', 'Blueprint Reading']
+
+                # Creative & Arts
+                elif any(word in job_title or word in experience for word in ['graphic', 'designer']):
+                    area_skills = ['Graphic Design', 'Adobe Creative Suite', 'Branding']
+                elif any(word in job_title or word in experience for word in ['photographer', 'photography']):
+                    area_skills = ['Photography', 'Photo Editing', 'Composition']
+                elif any(word in job_title or word in experience for word in ['video', 'videographer', 'editor']):
+                    area_skills = ['Video Editing', 'Adobe Premiere', 'Cinematography']
+                elif any(word in job_title or word in experience for word in ['writer', 'content', 'copywriter']):
+                    area_skills = ['Creative Writing', 'Copywriting', 'Editing', 'Content Marketing']
+
+                # Customer Service & Hospitality
+                elif any(word in job_title or word in experience for word in ['customer service', 'support', 'customer']):
+                    area_skills = ['Customer Service', 'Communication', 'Problem Solving']
+                elif any(word in job_title or word in experience for word in ['retail', 'store', 'cashier']):
+                    area_skills = ['Retail Management', 'Sales', 'Customer Service']
+                elif any(word in job_title or word in experience for word in ['hospitality', 'hotel', 'restaurant']):
+                    area_skills = ['Hospitality Management', 'Customer Service', 'Event Planning']
+                elif any(word in job_title or word in experience for word in ['chef', 'cook', 'culinary']):
+                    area_skills = ['Culinary Arts', 'Food Safety', 'Cooking', 'Menu Planning']
 
                 if area_skills:
                     skills = area_skills
                     recommendation_source = 'profile_area'
                     logger.info(f"Using skills from profile area ({job_title}): {skills}")
 
-        # 4. Fallback to generic popular skills
+        # 4. Fallback to generic popular skills (diverse across ALL fields)
         if not skills:
-            skills = ['Python', 'JavaScript', 'Data Analysis', 'Communication', 'Project Management']
+            skills = [
+                'Communication',           # Universal skill
+                'Leadership',              # Universal skill
+                'Project Management',      # Business/Tech
+                'Data Analysis',           # Business/Tech
+                'Customer Service'         # Service industries
+            ]
             recommendation_source = 'generic'
-            logger.info("Using generic skill recommendations")
+            logger.info("Using generic skill recommendations (multi-field)")
 
         result = course_service.get_recommended_courses(
             skills=skills,

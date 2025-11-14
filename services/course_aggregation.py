@@ -6,6 +6,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from services.coursera_service import CourseraService
 from services.udemy_service import UdemyService
 from services.udemy_free_service import UdemyFreeService
+from services.free_courses_aggregator import FreeCourseAggregator
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +16,10 @@ class CourseAggregationService:
 
     def __init__(self):
         """Initialize aggregation service with all providers."""
+        # PRIORITY 1: Free Course Aggregator (YouTube, edX, Alison, Khan Academy)
+        self.free_courses = FreeCourseAggregator()
+
+        # PRIORITY 2: Paid/Rate-limited APIs (fallback)
         self.coursera = CourseraService()
         self.udemy = UdemyService()
         self.udemy_free = UdemyFreeService()
@@ -37,7 +42,7 @@ class CourseAggregationService:
             category: Course category filter
             level: Course difficulty level
             is_free: Filter for free courses
-            sources: List of sources to search (coursera, udemy). If None, search all.
+            sources: List of sources to search. If None, search all.
             page: Page number for pagination
             page_size: Number of results per page
 
@@ -45,16 +50,26 @@ class CourseAggregationService:
             Dictionary containing aggregated course results
         """
         # Determine which sources to query
-        active_sources = sources or ['coursera', 'udemy', 'udemy_free']
+        # PRIORITY: Free sources (YouTube, edX, Alison, Khan) > Paid APIs
+        active_sources = sources or ['free_aggregator', 'coursera', 'udemy', 'udemy_free']
 
         all_courses = []
         errors = []
 
         # Use ThreadPoolExecutor to query sources in parallel
-        with ThreadPoolExecutor(max_workers=4) as executor:
+        with ThreadPoolExecutor(max_workers=5) as executor:
             futures = {}
 
-            # Submit search tasks for each source
+            # PRIORITY 1: Free Course Aggregator (YouTube, edX, Alison, Khan Academy)
+            # Covers ALL fields: tech, healthcare, business, education, trades, etc.
+            if 'free_aggregator' in active_sources:
+                future = executor.submit(
+                    self._search_free_courses,
+                    query, category, level, page_size
+                )
+                futures[future] = 'free_aggregator'
+
+            # PRIORITY 2: Coursera (fallback for additional results)
             if 'coursera' in active_sources:
                 future = executor.submit(
                     self._search_coursera,
@@ -62,6 +77,7 @@ class CourseAggregationService:
                 )
                 futures[future] = 'coursera'
 
+            # PRIORITY 3: Udemy (fallback for additional results)
             if 'udemy' in active_sources:
                 future = executor.submit(
                     self._search_udemy,
@@ -69,6 +85,7 @@ class CourseAggregationService:
                 )
                 futures[future] = 'udemy'
 
+            # PRIORITY 4: Udemy Free API (fallback)
             if 'udemy_free' in active_sources:
                 future = executor.submit(
                     self._search_udemy_free,
@@ -83,13 +100,14 @@ class CourseAggregationService:
                     result = future.result()
                     if result.get('courses'):
                         all_courses.extend(result['courses'])
+                        logger.info(f"✅ {source}: Got {len(result['courses'])} courses")
                     if result.get('error'):
                         errors.append({
                             'source': source,
                             'error': result['error']
                         })
                 except Exception as e:
-                    logger.error(f"Error fetching from {source}: {str(e)}")
+                    logger.error(f"❌ Error fetching from {source}: {str(e)}")
                     errors.append({
                         'source': source,
                         'error': str(e)
@@ -123,6 +141,7 @@ class CourseAggregationService:
     ) -> Dict:
         """
         Get recommended courses based on user skills/interests.
+        Works for ALL fields: tech, healthcare, business, marketing, education, trades, etc.
 
         Args:
             skills: List of skills user wants to learn
@@ -131,13 +150,22 @@ class CourseAggregationService:
         Returns:
             Dictionary containing recommended courses
         """
-        # Build search query from skills
-        query = ' '.join(skills[:3])  # Use top 3 skills
-
-        return self.search_courses(
-            query=query,
-            page_size=limit
-        )
+        # Use FREE course aggregator for recommendations
+        # This supports ALL fields, not just tech
+        try:
+            result = self.free_courses.get_recommended_courses(
+                skills=skills,
+                limit=limit
+            )
+            return result
+        except Exception as e:
+            logger.error(f"Error getting recommendations from free courses: {str(e)}")
+            # Fallback to traditional search
+            query = ' '.join(skills[:3])  # Use top 3 skills
+            return self.search_courses(
+                query=query,
+                page_size=limit
+            )
 
     def get_course_details(self, course_id: str) -> Optional[Dict]:
         """
@@ -172,6 +200,37 @@ class CourseAggregationService:
             'udemy': self.udemy.get_categories(),
             'all': self._merge_categories()
         }
+
+    def _search_free_courses(
+        self,
+        query: Optional[str],
+        category: Optional[str],
+        level: Optional[str],
+        limit: int
+    ) -> Dict:
+        """
+        Search FREE courses from YouTube, edX, Alison, Khan Academy.
+        Covers ALL fields: tech, healthcare, business, education, trades, etc.
+        """
+        try:
+            if not query:
+                # Return empty if no query
+                return {'courses': [], 'total': 0}
+
+            courses = self.free_courses.search_courses(
+                query=query,
+                category=category,
+                level=level,
+                limit=limit
+            )
+
+            return {
+                'courses': courses,
+                'total': len(courses)
+            }
+        except Exception as e:
+            logger.error(f"Free courses search error: {str(e)}")
+            return {'courses': [], 'total': 0, 'error': str(e)}
 
     def _search_coursera(
         self,

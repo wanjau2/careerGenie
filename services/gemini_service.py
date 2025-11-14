@@ -6,17 +6,48 @@ import json
 
 
 class GeminiService:
-    """AI-powered content generation using Google Gemini."""
+    """AI-powered content generation using Google Gemini with fallback models."""
+
+    # List of models to try in order (newest to oldest)
+    MODELS = [
+        'gemini-2.0-flash-exp',      # Latest experimental
+        'gemini-1.5-flash',           # Stable fast model
+        'gemini-1.5-flash-8b',        # Smaller fast model
+        'gemini-1.5-pro',             # High quality model
+        'gemini-1.0-pro',             # Legacy stable model
+    ]
 
     def __init__(self):
-        """Initialize Gemini API."""
-        api_key = os.getenv('GOOGLE_GEMINI_API_KEY')
+        """Initialize Gemini API with fallback model support."""
+        api_key = os.getenv('GOOGLE_GEMINI_API_KEY') or os.getenv('GEMINI_API_KEY')
         if not api_key:
-            raise ValueError("GOOGLE_GEMINI_API_KEY environment variable not set")
+            raise ValueError("GOOGLE_GEMINI_API_KEY or GEMINI_API_KEY environment variable not set")
 
         genai.configure(api_key=api_key)
-        # Use the latest stable Gemini 2.5 Flash model
-        self.model = genai.GenerativeModel('gemini-2.5-flash')
+        self.model = self._initialize_model()
+
+    def _initialize_model(self):
+        """Try to initialize Gemini models with fallback support."""
+        import logging
+        logger = logging.getLogger(__name__)
+
+        for model_name in self.MODELS:
+            try:
+                logger.info(f"Trying to initialize model: {model_name}")
+                model = genai.GenerativeModel(model_name)
+
+                # Test the model with a simple request
+                test_response = model.generate_content("Hello")
+                if test_response.text:
+                    logger.info(f"✅ Successfully initialized model: {model_name}")
+                    return model
+
+            except Exception as e:
+                logger.warning(f"❌ Failed to initialize {model_name}: {str(e)}")
+                continue
+
+        # If all models fail, raise error
+        raise ValueError(f"Failed to initialize any Gemini model. Tried: {', '.join(self.MODELS)}")
 
     def generate_cover_letter(self, job_data, user_profile):
         """

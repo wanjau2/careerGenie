@@ -13,6 +13,8 @@ from services.jobs_search_api import JobsSearchAPIService
 from services.linkedin_jobs_api import LinkedInJobsService
 from services.indeed_jobs_api import IndeedJobsService
 from services.google_jobs_api import GoogleJobsAPI
+from services.google_jobs_direct import GoogleJobsDirect  # FREE - No API key needed!
+from services.serpapi_jobs import SerpAPIJobs  # BEST - Official Google Jobs API
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +27,12 @@ class JobAggregationService:
         # JSearch API (Google for Jobs aggregator)
         self.jsearch_api_key = os.getenv('JSEARCH_API_KEY')
         self.jsearch_host = os.getenv('JSEARCH_API_HOST', 'jsearch.p.rapidapi.com')
+
+        # Initialize SerpAPI (BEST - Official Google Jobs API)
+        self.serpapi_jobs = SerpAPIJobs()
+
+        # Initialize FREE Google Jobs Direct (no API key needed - fallback)
+        self.google_jobs_direct = GoogleJobsDirect()
 
         # Initialize all API services
         self.careerjet_service = CareerjetService()
@@ -74,17 +82,34 @@ class JobAggregationService:
                 logger.info(f"Returning {len(cached_jobs)} jobs from cache")
                 return cached_jobs
 
-        # Determine which sources to query (use ALL if not specified)
-        active_sources = sources or ['jsearch', 'careerjet', 'jobs_search', 'linkedin', 'indeed']
+        # Determine which sources to query
+        # Prioritize BEST sources: SerpAPI > Free Scraping > RapidAPI
+        active_sources = sources or ['serpapi', 'google_direct', 'careerjet', 'jsearch', 'jobs_search', 'linkedin', 'indeed']
 
         all_jobs = []
         errors = []
 
         # Use ThreadPoolExecutor to query sources in parallel
-        with ThreadPoolExecutor(max_workers=5) as executor:
+        with ThreadPoolExecutor(max_workers=7) as executor:
             futures = {}
 
-            # Submit search tasks for each source
+            # PRIORITY 1: SerpAPI (BEST - Official Google Jobs API, 100 free/month)
+            if 'serpapi' in active_sources:
+                future = executor.submit(
+                    self.serpapi_jobs.search_jobs,
+                    query, location, limit
+                )
+                futures[future] = 'serpapi'
+
+            # PRIORITY 2: Free Google Jobs Direct (NO API KEY - Fallback if SerpAPI fails)
+            if 'google_direct' in active_sources:
+                future = executor.submit(
+                    self.google_jobs_direct.search_jobs,
+                    query, location, limit
+                )
+                futures[future] = 'google_direct'
+
+            # PRIORITY 3: JSearch (requires API key, may hit rate limits)
             if 'jsearch' in active_sources and self.jsearch_api_key:
                 future = executor.submit(
                     self._fetch_from_jsearch,
