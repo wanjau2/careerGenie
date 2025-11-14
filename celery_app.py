@@ -256,4 +256,17 @@ celery_app.conf.beat_schedule = {
         'task': 'auto_training_check',
         'schedule': 86400.0,  # Run once per day (in seconds)
     },
+    # Course cache management tasks
+    'refresh-course-cache-daily': {
+        'task': 'refresh_course_cache',
+        'schedule': 86400.0,  # Run once per day at midnight
+    },
+    'clean-expired-cache-every-6-hours': {
+        'task': 'clean_expired_cache',
+        'schedule': 21600.0,  # Run every 6 hours
+    },
+    'cache-health-check-hourly': {
+        'task': 'cache_health_check',
+        'schedule': 3600.0,  # Run every hour
+    },
 }

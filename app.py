@@ -365,15 +365,18 @@ def setup_extensions(app):
     # JWT error handlers
     @jwt.expired_token_loader
     def expired_token_callback(jwt_header, jwt_payload):
-        return jsonify(format_error_response("Token has expired", 401))
+        response, status_code = format_error_response("Token has expired", 401)
+        return jsonify(response), status_code
 
     @jwt.invalid_token_loader
     def invalid_token_callback(error):
-        return jsonify(format_error_response("Invalid token", 401))
+        response, status_code = format_error_response("Invalid token", 401)
+        return jsonify(response), status_code
 
     @jwt.unauthorized_loader
     def missing_token_callback(error):
-        return jsonify(format_error_response("Authorization token required", 401))
+        response, status_code = format_error_response("Authorization token required", 401)
+        return jsonify(response), status_code
 
     # CORS - Allow all localhost origins in development for Flutter web
     cors_config = {
