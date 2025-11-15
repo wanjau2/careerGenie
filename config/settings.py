@@ -13,8 +13,10 @@ class Config:
 
     # JWT settings
     JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'jwt-secret-key-change-in-production')
-    JWT_ACCESS_TOKEN_EXPIRES = timedelta(seconds=int(os.getenv('JWT_ACCESS_TOKEN_EXPIRES', 3600)))
-    JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=30)
+    # Access token: 7 days (604800 seconds) - long enough for mobile apps
+    # Can be overridden via JWT_ACCESS_TOKEN_EXPIRES env var
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(seconds=int(os.getenv('JWT_ACCESS_TOKEN_EXPIRES', 604800)))
+    JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=90)  # Refresh token: 90 days
     JWT_BLACKLIST_ENABLED = True
     JWT_BLACKLIST_TOKEN_CHECKS = ['access', 'refresh']
 

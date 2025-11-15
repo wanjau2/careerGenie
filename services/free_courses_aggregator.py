@@ -2,13 +2,15 @@
 Free Course Aggregator for ALL Fields
 Supports: Tech, Healthcare, Business, Marketing, Design, Teaching, etc.
 
-Free APIs Used:
+Free Sources Used:
 1. YouTube Data API - 10,000 requests/day (FREE)
 2. edX API - Public courses (FREE)
-3. Khan Academy API - K-12 to College (FREE)
-4. MIT OpenCourseWare - RSS feeds (FREE)
-5. FutureLearn API - Various fields (FREE)
-6. Alison API - Career courses (FREE)
+3. Khan Academy - K-12 to College (FREE)
+4. Alison - Career courses (FREE)
+5. MIT OpenCourseWare - 2,500+ courses (FREE)
+6. Harvard CS50 - Computer Science (FREE)
+7. FreeCodeCamp - Web Development (FREE)
+8. Udacity Free Courses (FREE)
 """
 
 import os
@@ -17,6 +19,18 @@ from typing import List, Dict, Optional
 import logging
 from datetime import datetime
 import json
+
+from services.additional_course_sources import (
+    MITOpenCourseWare,
+    HarvardCS50,
+    FreeCodeCampCourses,
+    UdacityFreeCourses
+)
+from services.course_scrapers import (
+    ClassCentralScraper,
+    UdacityScraper,
+    SkillshareScraper
+)
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +46,17 @@ class FreeCourseAggregator:
         self.use_edx = True
         self.use_khan_academy = True
         self.use_alison = True
+
+        # Initialize additional course sources
+        self.mit_ocw = MITOpenCourseWare()
+        self.harvard_cs50 = HarvardCS50()
+        self.freecodecamp = FreeCodeCampCourses()
+        self.udacity = UdacityFreeCourses()
+
+        # Initialize web scrapers (MASSIVE course increase!)
+        self.class_central = ClassCentralScraper()  # 50,000+ courses!
+        self.udacity_scraper = UdacityScraper()  # Dynamic Udacity courses
+        self.skillshare = SkillshareScraper()  # Creative courses
 
     def search_courses(
         self,
@@ -59,21 +84,56 @@ class FreeCourseAggregator:
         all_courses.extend(youtube_courses)
 
         # 2. edX Courses (Academic - all fields)
-        edx_courses = self._search_edx(query, limit=10)
+        edx_courses = self._search_edx(query, limit=5)
         all_courses.extend(edx_courses)
 
         # 3. Alison (Career skills - all fields)
-        alison_courses = self._search_alison(query, category, limit=10)
+        alison_courses = self._search_alison(query, category, limit=5)
         all_courses.extend(alison_courses)
 
         # 4. Khan Academy (K-12 to college - all subjects)
         if self._is_academic_subject(query, category):
-            khan_courses = self._search_khan_academy(query, limit=5)
+            khan_courses = self._search_khan_academy(query, limit=3)
             all_courses.extend(khan_courses)
+
+        # 5. Harvard CS50 (Computer Science - if tech/programming query)
+        if self._is_tech_subject(query, category):
+            cs50_courses = self.harvard_cs50.get_courses(limit=3)
+            all_courses.extend(cs50_courses)
+
+        # 6. FreeCodeCamp (Web Development - if tech query)
+        if self._is_tech_subject(query, category):
+            fcc_courses = self.freecodecamp.get_courses(limit=3)
+            all_courses.extend(fcc_courses)
+
+        # 7. MIT OpenCourseWare (STEM subjects)
+        if self._is_academic_subject(query, category) or self._is_tech_subject(query, category):
+            mit_courses = self.mit_ocw.search_courses(query, category, limit=3)
+            all_courses.extend(mit_courses)
+
+        # 8. Udacity Free (Tech skills)
+        if self._is_tech_subject(query, category):
+            udacity_courses = self.udacity.get_courses(limit=2)
+            all_courses.extend(udacity_courses)
+
+        # 9. Class Central (MASSIVE - 50,000+ courses via web scraping!)
+        class_central_courses = self.class_central.search_courses(query, category, limit=10)
+        all_courses.extend(class_central_courses)
+
+        # 10. Udacity Scraper (Dynamic courses - more results!)
+        if self._is_tech_subject(query, category):
+            udacity_scraped = self.udacity_scraper.search_courses(query, limit=5)
+            all_courses.extend(udacity_scraped)
+
+        # 11. Skillshare (Creative courses via web scraping)
+        if self._is_creative_subject(query, category):
+            skillshare_courses = self.skillshare.search_courses(query, limit=5)
+            all_courses.extend(skillshare_courses)
 
         # Remove duplicates and limit
         unique_courses = self._deduplicate_courses(all_courses)
 
+        logger.info(f"🎯 Total unique courses found: {len(unique_courses)} for '{query}'")
         return unique_courses[:limit]
 
     def _search_youtube(
@@ -368,7 +428,7 @@ class FreeCourseAggregator:
         return category_map.get(category.lower(), '27')  # Default: Education
 
     def _is_academic_subject(self, query: str, category: Optional[str]) -> bool:
-        """Check if query is an academic subject suitable for Khan Academy"""
+        """Check if query is an academic subject suitable for Khan Academy/MIT OCW"""
         academic_keywords = [
             'math', 'science', 'biology', 'chemistry', 'physics',
             'algebra', 'geometry', 'calculus', 'statistics',
@@ -376,6 +436,40 @@ class FreeCourseAggregator:
         ]
         query_lower = query.lower()
         return any(keyword in query_lower for keyword in academic_keywords)
+
+    def _is_tech_subject(self, query: str, category: Optional[str]) -> bool:
+        """Check if query is a tech/programming subject"""
+        tech_keywords = [
+            'programming', 'python', 'javascript', 'java', 'web', 'app',
+            'software', 'developer', 'code', 'coding', 'html', 'css',
+            'react', 'node', 'django', 'flask', 'sql', 'database',
+            'frontend', 'backend', 'fullstack', 'devops', 'git',
+            'api', 'computer science', 'data science', 'machine learning',
+            'ai', 'artificial intelligence', 'algorithm'
+        ]
+        query_lower = query.lower()
+        category_lower = category.lower() if category else ''
+
+        return (
+            any(keyword in query_lower for keyword in tech_keywords) or
+            category_lower in ['tech', 'technology', 'programming', 'computer science']
+        )
+
+    def _is_creative_subject(self, query: str, category: Optional[str]) -> bool:
+        """Check if query is a creative/design subject"""
+        creative_keywords = [
+            'design', 'graphic', 'photography', 'photo', 'video', 'editing',
+            'art', 'drawing', 'painting', 'illustration', 'creative',
+            'photoshop', 'illustrator', 'adobe', 'ui', 'ux', 'figma',
+            'animation', 'music', 'sound', 'audio', 'film', 'cinema'
+        ]
+        query_lower = query.lower()
+        category_lower = category.lower() if category else ''
+
+        return (
+            any(keyword in query_lower for keyword in creative_keywords) or
+            category_lower in ['design', 'creative', 'art', 'photography', 'video']
+        )
 
     def _deduplicate_courses(self, courses: List[Dict]) -> List[Dict]:
         """Remove duplicate courses based on title similarity"""
