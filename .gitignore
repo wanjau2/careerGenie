@@ -23,14 +23,11 @@ wheels/
 .installed.cfg
 *.egg
 
-# Environment & Secrets
+# Environment
 .env
-.env.*
-!.env.example
-*.key
-*.pem
-credentials.json
-secrets.json
+.env.local
+.env.example
+
 
 # IDE
 .vscode/
@@ -42,8 +39,6 @@ secrets.json
 # Logs
 logs/
 *.log
-*.txt
-!requirements.txt
 
 # Uploads
 uploads/
@@ -57,19 +52,3 @@ Thumbs.db
 .pytest_cache/
 .coverage
 htmlcov/
-
-# Google Service Account Credentials
-google-service-account.json
-*-service-account.json
-
-# Test scripts with credentials
-test_*.sh
-*_test.sh
-
-# Celery
-celerybeat-schedule*
-celerybeat.pid
-
-# Documentation files (except README)
-*.md
-!README.md

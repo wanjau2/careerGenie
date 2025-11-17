@@ -85,8 +85,13 @@ def get_jobs():
             # Get salary expectations from preferences first, fallback to profile
             expected_salary = preferences.get('expectedSalary') or profile.get('expectedSalary', {})
             if expected_salary:
-                filters['minSalary'] = expected_salary.get('min')
-                filters['maxSalary'] = expected_salary.get('max')
+                min_salary = expected_salary.get('min')
+                max_salary = expected_salary.get('max')
+                # Only add salary filters if they have valid non-zero values
+                if min_salary and min_salary > 0:
+                    filters['minSalary'] = min_salary
+                if max_salary and max_salary > 0:
+                    filters['maxSalary'] = max_salary
 
         # Override with query parameters (filters from filter modal)
         if request.args.get('keywords'):
@@ -135,6 +140,7 @@ def get_jobs():
         skip, limit = calculate_skip_limit(validated_page, validated_page_size)
 
         # Get jobs with filters
+        logger.info(f"🔍 DEBUG: Filters being passed to Job.get_active_jobs: {filters}")
         jobs = Job.get_active_jobs(filters, skip=skip, limit=validated_page_size * 2)
 
         # Exclude already swiped jobs

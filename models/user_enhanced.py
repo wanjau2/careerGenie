@@ -74,7 +74,7 @@ class EnhancedUser:
 
             # Education
             'education': kwargs.get('education', []),
-            # Each entry: {institution, degree, field, startDate, endDate, gpa, achievements}
+            # Each entry: {institution, degree, field, startDate, endDate, gpa, achievements, coursework}
 
             # Skills with proficiency
             'skills': kwargs.get('skills', []),

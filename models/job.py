@@ -88,11 +88,13 @@ class Job:
             if 'remoteOnly' in filters and filters['remoteOnly']:
                 query['location.remote'] = True
 
-            # Salary filter
+            # Salary filter - only include jobs with salary data and within range
             if 'minSalary' in filters and filters['minSalary']:
-                query['salary.max'] = {'$gte': filters['minSalary']}
+                # Filter jobs where salary.max exists and is >= minSalary
+                query['salary.max'] = {'$gte': filters['minSalary'], '$ne': None}
             if 'maxSalary' in filters and filters['maxSalary']:
-                query['salary.min'] = {'$lte': filters['maxSalary']}
+                # Filter jobs where salary.min exists and is <= maxSalary
+                query['salary.min'] = {'$lte': filters['maxSalary'], '$ne': None}
 
             # Employment type filter
             if 'jobTypes' in filters and filters['jobTypes']:
@@ -165,11 +167,11 @@ class Job:
             if 'remoteOnly' in filters and filters['remoteOnly']:
                 query['location.remote'] = True
 
-            # Salary
+            # Salary - only include jobs with salary data and within range
             if 'minSalary' in filters and filters['minSalary']:
-                query['salary.max'] = {'$gte': filters['minSalary']}
+                query['salary.max'] = {'$gte': filters['minSalary'], '$ne': None}
             if 'maxSalary' in filters and filters['maxSalary']:
-                query['salary.min'] = {'$lte': filters['maxSalary']}
+                query['salary.min'] = {'$lte': filters['maxSalary'], '$ne': None}
 
             # Job types
             if 'jobTypes' in filters and filters['jobTypes']:

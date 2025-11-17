@@ -170,7 +170,8 @@ Extract and return ONLY a valid JSON object with the following structure:
             "startDate": "MM/YYYY",
             "endDate": "MM/YYYY",
             "gpa": "3.8/4.0",
-            "achievements": ["Honor", "Award"]
+            "achievements": ["Honor", "Award"],
+            "coursework": ["Relevant Course 1", "Relevant Course 2"]
         }}
     ],
     "skills": [
@@ -326,7 +327,8 @@ Return ONLY the JSON object, no additional text.
                         'degree': '',
                         'field': '',
                         'startDate': '',
-                        'endDate': ''
+                        'endDate': '',
+                        'coursework': []
                     })
 
         return education
