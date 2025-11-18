@@ -69,6 +69,7 @@ def upload_avatar():
 
 
 @files_bp.route('/upload-resume', methods=['POST'])
+@files_bp.route('/upload/resume', methods=['POST'])  # Alias for Flutter compatibility
 @jwt_required()
 def upload_resume():
     """

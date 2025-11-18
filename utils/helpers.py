@@ -185,18 +185,19 @@ def calculate_match_score(user_preferences, job_data):
     user_salary = user_preferences.get('expectedSalary', {})
     job_salary = job_data.get('salary', {})
     if user_salary and job_salary:
-        user_min = user_salary.get('min', 0)
-        user_max = user_salary.get('max', float('inf'))
-        job_min = job_salary.get('min', 0)
-        job_max = job_salary.get('max', 0)
+        user_min = user_salary.get('min') or 0
+        user_max = user_salary.get('max') or float('inf')
+        job_min = job_salary.get('min') or 0
+        job_max = job_salary.get('max') or 0
 
-        # Check if salary ranges overlap
-        if job_max >= user_min and job_min <= user_max:
-            # Calculate overlap percentage
-            overlap_min = max(user_min, job_min)
-            overlap_max = min(user_max, job_max)
-            overlap_pct = (overlap_max - overlap_min) / (user_max - user_min) if user_max > user_min else 1.0
-            score += weights['salary'] * overlap_pct
+        # Only compare if we have valid values (not None)
+        if job_max is not None and user_min is not None and job_min is not None and user_max is not None:
+            if job_max >= user_min and job_min <= user_max:
+                # Calculate overlap percentage
+                overlap_min = max(user_min, job_min)
+                overlap_max = min(user_max, job_max)
+                overlap_pct = (overlap_max - overlap_min) / (user_max - user_min) if user_max > user_min else 1.0
+                score += weights['salary'] * overlap_pct
 
     # Location match (simple city/state match for now)
     user_location = user_preferences.get('location', {})

@@ -115,29 +115,41 @@ def update_preferences():
     Returns:
         JSON response with updated preferences
     """
+    import logging
+    logger = logging.getLogger(__name__)
+
     try:
         user_id = get_jwt_identity()
         data = request.get_json()
 
+        logger.info(f"🔧 Update preferences request for user: {user_id}")
+        logger.info(f"📦 Request data: {data}")
+
         if not data:
+            logger.warning("⚠️ No data provided in request")
             return jsonify(format_error_response("No data provided", 400))
 
         # Update preferences
+        logger.info(f"💾 Updating preferences in database...")
         success = User.update_preferences(user_id, data)
 
         if not success:
+            logger.error(f"❌ Failed to update preferences for user {user_id}")
             return jsonify(format_error_response("Failed to update preferences", 500))
 
         # Get updated user
+        logger.info(f"✅ Preferences updated, fetching user data...")
         user = User.find_by_id(user_id)
         user_data = serialize_document(user)
 
+        logger.info(f"✅ Update preferences successful for user {user_id}")
         return jsonify({
             'message': 'Preferences updated successfully',
             'preferences': user_data.get('preferences', {})
         }), 200
 
     except Exception as e:
+        logger.error(f"❌ EXCEPTION in update_preferences: {str(e)}", exc_info=True)
         return jsonify(format_error_response(f"Server error: {str(e)}", 500))
 
 

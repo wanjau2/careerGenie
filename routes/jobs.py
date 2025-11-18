@@ -556,6 +556,9 @@ def get_applications():
     try:
         user_id = get_jwt_identity()
 
+        logger.info(f"📋 Get applications request for user: {user_id}")
+        logger.info(f"🔍 Query params: {dict(request.args)}")
+
         # Get pagination params
         page = request.args.get('page', 1, type=int)
         page_size = request.args.get('pageSize', 20, type=int)
@@ -565,10 +568,13 @@ def get_applications():
         )
 
         if not is_valid:
+            logger.warning(f"⚠️ Invalid pagination params: {error}")
             return jsonify(format_error_response(error, 400))
 
         # Get all user applications (we'll filter manually)
+        logger.info(f"💾 Fetching applications from database...")
         applications = Application.get_user_applications(user_id, status=None, skip=0, limit=1000)
+        logger.info(f"📊 Found {len(applications)} applications")
 
         # Enrich with job details and apply filters
         from config.database import get_jobs_collection
@@ -595,23 +601,44 @@ def get_applications():
                 try:
                     from datetime import datetime
                     app_date = app.get('appliedAt')
-                    if app_date < datetime.fromisoformat(date_from.replace('Z', '+00:00')):
+                    if not app_date:
+                        logger.debug(f"⚠️ Application {app.get('_id')} has no appliedAt date")
                         continue
-                except:
+                    # Convert to datetime if it's a string
+                    if isinstance(app_date, str):
+                        app_date = datetime.fromisoformat(app_date.replace('Z', '+00:00'))
+                    date_from_dt = datetime.fromisoformat(date_from.replace('Z', '+00:00'))
+                    if app_date < date_from_dt:
+                        continue
+                except Exception as e:
+                    logger.warning(f"⚠️ Date from parsing error: {e}, dateFrom={date_from}, appliedAt={app.get('appliedAt')}")
                     pass
 
             if date_to:
                 try:
                     from datetime import datetime
                     app_date = app.get('appliedAt')
-                    if app_date > datetime.fromisoformat(date_to.replace('Z', '+00:00')):
+                    if not app_date:
                         continue
-                except:
+                    # Convert to datetime if it's a string
+                    if isinstance(app_date, str):
+                        app_date = datetime.fromisoformat(app_date.replace('Z', '+00:00'))
+                    date_to_dt = datetime.fromisoformat(date_to.replace('Z', '+00:00'))
+                    if app_date > date_to_dt:
+                        continue
+                except Exception as e:
+                    logger.warning(f"⚠️ Date to parsing error: {e}, dateTo={date_to}, appliedAt={app.get('appliedAt')}")
                     pass
 
             # Get job details
-            job = jobs_collection.find_one({'_id': app['jobId']})
-            if not job:
+            try:
+                job_id = app['jobId'] if isinstance(app['jobId'], ObjectId) else ObjectId(app['jobId'])
+                job = jobs_collection.find_one({'_id': job_id})
+                if not job:
+                    logger.warning(f"⚠️ Job {job_id} not found for application")
+                    continue
+            except Exception as e:
+                logger.error(f"❌ Error fetching job {app.get('jobId')}: {e}")
                 continue
 
             # Keywords filter (job title or company name)
