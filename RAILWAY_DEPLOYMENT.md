@@ -77,13 +77,15 @@ You're getting **1,400+ jobs** without Careerjet, so this API is **optional**.
 
 Go to your Railway project → Variables → Add these:
 
+**⚠️ IMPORTANT**: Copy actual values from your local `.env` file!
+
 ```bash
-# MongoDB (Already configured)
-MONGODB_URI=mongodb+srv://wanjau:YCcxYh2VtvkfHiZr@careergenie.w9saxx7.mongodb.net/CareerGenie?retryWrites=true&w=majority&appName=CareerGenie
+# MongoDB (Copy from your .env file)
+MONGODB_URI=your_mongodb_connection_string_here
 DB_NAME=CareerGenie
 
-# JWT Configuration
-JWT_SECRET_KEY=WBEFlp7A5t3n8WlxjvJoAQD0kq0FfimodjXwQthmNak
+# JWT Configuration (Copy from your .env file)
+JWT_SECRET_KEY=your_jwt_secret_key_here
 JWT_ACCESS_TOKEN_EXPIRES=3600
 JWT_REFRESH_TOKEN_EXPIRES=2592000
 
@@ -92,14 +94,14 @@ FLASK_ENV=production
 PORT=8000
 DEBUG=False
 
-# SerpAPI (Working great!)
-SERPAPI_KEY=1e7297556c2e6a28a2ab4f9efa55a73b3a65a8d0da71a501c63f644c86cf2bd5
+# SerpAPI (Copy from your .env file)
+SERPAPI_KEY=your_serpapi_key_here
 
-# RapidAPI
-RAPIDAPI_KEY=aa0310a77amsh86c1983fa2a943bp146108jsn1142ec5f3a54
+# RapidAPI (Copy from your .env file)
+RAPIDAPI_KEY=your_rapidapi_key_here
 
-# Google Services
-GOOGLE_GEMINI_API_KEY=AIzaSyCpv1rs7UIV7O1Q25RrNBkRAz_dVDnA8xA
+# Google Services (Copy from your .env file)
+GOOGLE_GEMINI_API_KEY=your_gemini_api_key_here
 
 # Careerjet (Optional - only if you have static IP)
 CAREERJET_AFFILIATE_ID=your_affiliate_id_here
