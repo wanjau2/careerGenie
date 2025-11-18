@@ -6,48 +6,38 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-client = MongoClient(os.getenv('MONGODB_URI', 'mongodb://localhost:27017/'))
-db = client[os.getenv('DB_NAME', 'career_genie')]
+client = MongoClient(os.getenv('MONGODB_URI'))
+db = client[os.getenv('DB_NAME')]
 
 # Count total jobs
-total_jobs = db.jobs.count_documents({})
-print(f'Total jobs in database: {total_jobs}')
+total = db.jobs.count_documents({'isActive': True})
+print(f'📊 Total active jobs in database: {total}')
 
-# Count jobs in Nairobi
-nairobi_jobs = db.jobs.count_documents({'location.city': 'Nairobi'})
-print(f'Jobs in Nairobi: {nairobi_jobs}')
-
-# Get breakdown by job title
-print(f'\nTop 20 job titles in Nairobi:')
+# Count by category
+print(f'\n📋 Jobs by category:')
 pipeline = [
-    {'$match': {'location.city': 'Nairobi'}},
-    {'$group': {'_id': '$title', 'count': {'$sum': 1}}},
-    {'$sort': {'count': -1}},
-    {'$limit': 20}
+    {'$match': {'isActive': True}},
+    {'$group': {'_id': '$category', 'count': {'$sum': 1}}},
+    {'$sort': {'count': -1}}
 ]
-results = list(db.jobs.aggregate(pipeline))
-for i, r in enumerate(results, 1):
-    print(f'{i:2d}. {r["_id"]}: {r["count"]}')
+for doc in db.jobs.aggregate(pipeline):
+    print(f'   {doc["_id"]}: {doc["count"]} jobs')
 
-# Get companies hiring
-print(f'\nTop companies hiring in Nairobi:')
+# Count by source
+print(f'\n🔍 Jobs by source:')
 pipeline = [
-    {'$match': {'location.city': 'Nairobi'}},
-    {'$group': {'_id': '$company.name', 'count': {'$sum': 1}}},
-    {'$sort': {'count': -1}},
-    {'$limit': 15}
+    {'$match': {'isActive': True}},
+    {'$group': {'_id': '$source', 'count': {'$sum': 1}}},
+    {'$sort': {'count': -1}}
 ]
-results = list(db.jobs.aggregate(pipeline))
-for i, r in enumerate(results, 1):
-    print(f'{i:2d}. {r["_id"]}: {r["count"]} positions')
+for doc in db.jobs.aggregate(pipeline):
+    print(f'   {doc["_id"]}: {doc["count"]} jobs')
 
-# Check data engineering related jobs
-print(f'\nData Engineering related jobs breakdown:')
-de_keywords = ['Data Engineer', 'Data Analyst', 'Machine Learning', 'Big Data', 'Business Intelligence', 'Data Scientist', 'ETL']
-for keyword in de_keywords:
-    count = db.jobs.count_documents({
-        'location.city': 'Nairobi',
-        'title': {'$regex': keyword, '$options': 'i'}
-    })
-    if count > 0:
-        print(f'  {keyword}: {count} jobs')
+# Show sample jobs
+print(f'\n✅ Sample jobs (first 5):')
+for i, job in enumerate(db.jobs.find({'isActive': True}).limit(5), 1):
+    print(f'\n   {i}. {job.get("title", "N/A")}')
+    print(f'      Company: {job.get("company", "N/A")}')
+    print(f'      Location: {job.get("location", "N/A")}')
+    print(f'      Category: {job.get("category", "N/A")}')
+    print(f'      Source: {job.get("source", "N/A")}')

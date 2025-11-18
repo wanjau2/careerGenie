@@ -143,7 +143,7 @@ class User:
         update_doc = {}
         allowed_fields = [
             'firstName', 'lastName', 'phone', 'location',
-            'skills', 'experience', 'expectedSalary'
+            'skills', 'experience', 'expectedSalary', 'resumeData'
         ]
 
         for field in allowed_fields:

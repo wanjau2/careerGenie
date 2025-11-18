@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Dict, List, Optional
 
 try:
-    from careerjet_api import CareerjetAPIClient
+    from careerjet_api_client import CareerjetAPIClient
     CAREERJET_AVAILABLE = True
 except ImportError:
     CAREERJET_AVAILABLE = False

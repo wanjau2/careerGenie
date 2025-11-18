@@ -63,192 +63,119 @@ LOCATIONS = {
     ]
 }
 
-# Comprehensive job categories covering ALL major fields
+# COMPREHENSIVE JOB CATEGORIES - GLOBAL ALL INDUSTRIES
 JOB_CATEGORIES = [
-    # ========== TECHNOLOGY & ENGINEERING ==========
-    # Software Development
-    "Software Engineer", "Software Developer", "Full Stack Developer",
-    "Frontend Developer", "Backend Developer", "Mobile Developer",
-    "Web Developer", "Application Developer", "Systems Engineer",
+    # ========== TECH & IT ==========
+    "Software Engineer", "Software Developer", "Web Developer",
+    "Frontend Developer", "Backend Developer", "Full Stack Developer",
+    "Mobile App Developer", "Android Developer", "iOS Developer",
+    "DevOps Engineer", "Cloud Engineer", "Data Scientist",
+    "Data Analyst", "Machine Learning Engineer", "AI Engineer",
+    "Database Administrator", "System Administrator", "Network Engineer",
+    "Cybersecurity Analyst", "QA Engineer", "QA Tester",
+    "Product Manager", "Product Owner", "UI/UX Designer",
+    "UX Researcher", "IT Support Specialist", "IT Technician",
+    "Solutions Architect", "Business Intelligence Analyst",
+    "Computer Technician", "Game Developer", "Blockchain Developer",
+    "Salesforce Administrator", "SAP Consultant", "ERP Consultant",
+    "IT Project Manager", "Technical Writer", "Scrum Master",
+    "Agile Coach",
 
-    # Data & AI
-    "Data Scientist", "Data Engineer", "Data Analyst",
-    "Machine Learning Engineer", "AI Engineer", "Deep Learning Engineer",
-    "Business Intelligence Analyst", "Analytics Manager",
+    # ========== BUSINESS, FINANCE & MANAGEMENT ==========
+    "Accountant", "Auditor", "Financial Analyst",
+    "Business Analyst", "Operations Manager", "Project Manager",
+    "Entrepreneur", "CEO", "COO", "CFO",
+    "Procurement Officer", "Logistics Manager", "Supply Chain Manager",
+    "Credit Analyst", "Investment Analyst", "Risk Analyst",
+    "Bank Teller", "Loan Officer", "Relationship Manager",
+    "Compliance Officer", "Economist", "Management Consultant",
+    "HR Manager", "HR Officer", "Recruiter",
+    "Talent Acquisition Specialist", "Administrative Assistant",
+    "Executive Assistant", "Office Manager", "Payroll Officer",
 
-    # DevOps & Infrastructure
-    "DevOps Engineer", "Cloud Engineer", "Site Reliability Engineer",
-    "Systems Administrator", "Network Engineer", "Database Administrator",
-    "Infrastructure Engineer", "Platform Engineer",
+    # ========== SALES, MARKETING & CUSTOMER SERVICE ==========
+    "Sales Executive", "Sales Representative", "Sales Manager",
+    "Marketing Manager", "Digital Marketer", "Social Media Manager",
+    "Content Writer", "Copywriter", "SEO Specialist",
+    "SEM Specialist", "Brand Manager", "Growth Manager",
+    "Customer Service Representative", "Call Center Agent",
+    "Customer Success Manager", "Account Manager",
+    "Key Account Manager", "Telemarketer",
 
-    # Security & Quality
-    "Security Engineer", "Cybersecurity Analyst", "Information Security Manager",
-    "QA Engineer", "Test Engineer", "Automation Engineer",
+    # ========== CREATIVE, MEDIA & DESIGN ==========
+    "Graphic Designer", "Video Editor", "Photographer",
+    "Videographer", "Animator", "Motion Graphics Designer",
+    "Illustrator", "Creative Director", "Sound Engineer",
+    "Music Producer", "Art Director", "Fashion Designer",
+    "Interior Designer", "Content Creator", "Influencer",
+    "Editor", "Journalist", "TV Presenter",
 
-    # Specialized Tech
-    "Blockchain Developer", "IoT Engineer", "Embedded Systems Engineer",
-    "Game Developer", "AR/VR Developer", "Robotics Engineer",
+    # ========== ENGINEERING & TECHNICAL FIELDS ==========
+    "Mechanical Engineer", "Electrical Engineer", "Civil Engineer",
+    "Structural Engineer", "Chemical Engineer", "Petroleum Engineer",
+    "Aerospace Engineer", "Industrial Engineer", "Automotive Engineer",
+    "Mechatronics Engineer", "Biomedical Engineer",
+    "Environmental Engineer", "CAD Designer", "Architect",
+    "Quantity Surveyor", "Surveyor",
 
-    # ========== BUSINESS & MANAGEMENT ==========
-    # Leadership
-    "CEO", "CTO", "CFO", "COO", "VP Operations",
-    "General Manager", "Director", "Team Lead",
+    # ========== HEALTH & MEDICAL ==========
+    "Doctor", "Nurse", "Pharmacist",
+    "Lab Technician", "Radiologist", "Psychologist",
+    "Therapist", "Surgeon", "Nutritionist",
+    "Dentist", "Dental Assistant", "Optometrist",
+    "Physiotherapist", "Clinical Officer", "Medical Assistant",
 
-    # Project & Product Management
-    "Product Manager", "Project Manager", "Program Manager",
-    "Scrum Master", "Agile Coach", "Product Owner",
+    # ========== EDUCATION ==========
+    "Teacher", "Lecturer", "Professor",
+    "Tutor", "Academic Advisor", "Curriculum Developer",
+    "Librarian", "Researcher", "Instructional Designer",
 
-    # Business Analysis
-    "Business Analyst", "Management Consultant", "Strategy Consultant",
-    "Operations Analyst", "Process Improvement Manager",
+    # ========== LAW, GOVERNMENT & ADMINISTRATION ==========
+    "Lawyer", "Advocate", "Paralegal",
+    "Legal Assistant", "Judge", "Legal Counsel",
+    "Policy Analyst", "Government Officer", "Diplomat",
+    "Customs Officer", "Immigration Officer",
+    "Public Relations Officer", "Security Officer",
 
-    # ========== SALES & MARKETING ==========
-    # Sales
-    "Sales Manager", "Account Manager", "Sales Representative",
-    "Business Development Manager", "Sales Executive", "Inside Sales",
-    "Account Executive", "Regional Sales Manager",
+    # ========== HOSPITALITY, FOOD & TRAVEL ==========
+    "Chef", "Cook", "Waiter",
+    "Bartender", "Hotel Manager", "Housekeeper",
+    "Tour Guide", "Travel Agent", "Event Planner",
+    "Event Coordinator", "Receptionist",
 
-    # Marketing
-    "Marketing Manager", "Digital Marketing Manager", "Brand Manager",
-    "Content Marketing Manager", "Growth Marketing Manager",
-    "Social Media Manager", "SEO Specialist", "Marketing Analyst",
-    "Email Marketing Specialist", "Performance Marketing Manager",
+    # ========== FIELD, LABOUR & GENERAL WORK ==========
+    "Driver", "Mechanic", "Electrician",
+    "Plumber", "Carpenter", "Mason",
+    "Welder", "Technician", "Security Guard",
+    "Cleaner", "Gardener", "Warehouse Worker",
+    "Forklift Operator",
 
-    # ========== DESIGN & CREATIVE ==========
-    "UX Designer", "UI Designer", "Product Designer",
-    "Graphic Designer", "Visual Designer", "Motion Designer",
-    "UX Researcher", "Creative Director", "Art Director",
-    "Illustrator", "3D Designer", "Video Editor",
-
-    # ========== HEALTHCARE & MEDICAL ==========
-    # Clinical
-    "Doctor", "Physician", "Surgeon", "Nurse",
-    "Registered Nurse", "Nurse Practitioner", "Physician Assistant",
-    "Pharmacist", "Dentist", "Optometrist",
-
-    # Allied Health
-    "Physical Therapist", "Occupational Therapist", "Speech Therapist",
-    "Radiologic Technologist", "Medical Lab Technician",
-    "Respiratory Therapist", "Dietitian", "Nutritionist",
-
-    # Healthcare Administration
-    "Healthcare Administrator", "Medical Office Manager",
-    "Health Information Manager", "Clinical Research Coordinator",
-    "Medical Billing Specialist", "Healthcare Consultant",
-
-    # Mental Health
-    "Psychologist", "Psychiatrist", "Counselor",
-    "Social Worker", "Mental Health Therapist",
-
-    # ========== HOSPITALITY & FOOD SERVICE ==========
-    # Hotel Management
-    "Hotel Manager", "Front Desk Manager", "Housekeeping Manager",
-    "Revenue Manager", "Guest Services Manager", "Concierge",
-
-    # Food & Beverage
-    "Chef", "Executive Chef", "Sous Chef", "Cook",
-    "Restaurant Manager", "Food Service Manager", "Catering Manager",
-    "Bartender", "Waiter", "Server", "Barista",
-
-    # Event Management
-    "Event Manager", "Event Coordinator", "Wedding Planner",
-    "Banquet Manager", "Conference Manager",
-
-    # ========== FINANCE & ACCOUNTING ==========
-    "Accountant", "Financial Analyst", "Finance Manager",
-    "Controller", "Auditor", "Tax Accountant",
-    "Investment Banker", "Financial Advisor", "Budget Analyst",
-    "Payroll Specialist", "Bookkeeper", "Treasury Analyst",
-
-    # ========== HUMAN RESOURCES ==========
-    "HR Manager", "Recruiter", "Talent Acquisition Specialist",
-    "HR Business Partner", "Compensation Analyst",
-    "Training Manager", "Employee Relations Manager",
-    "HR Generalist", "People Operations Manager",
-
-    # ========== LEGAL ==========
-    "Lawyer", "Attorney", "Legal Counsel", "Paralegal",
-    "Legal Assistant", "Compliance Officer", "Contract Manager",
-
-    # ========== EDUCATION & TRAINING ==========
-    "Teacher", "Professor", "Instructor", "Tutor",
-    "Training Manager", "Curriculum Developer",
-    "Education Consultant", "School Administrator",
-    "Academic Advisor", "Librarian",
-
-    # ========== CUSTOMER SERVICE & SUPPORT ==========
-    "Customer Service Representative", "Customer Support Specialist",
-    "Customer Success Manager", "Technical Support Engineer",
-    "Call Center Agent", "Help Desk Technician",
-
-    # ========== OPERATIONS & LOGISTICS ==========
-    "Operations Manager", "Supply Chain Manager", "Logistics Coordinator",
-    "Warehouse Manager", "Procurement Manager", "Inventory Manager",
-    "Transportation Manager", "Distribution Manager",
-
-    # ========== MANUFACTURING & PRODUCTION ==========
-    "Production Manager", "Plant Manager", "Manufacturing Engineer",
-    "Quality Control Manager", "Maintenance Technician",
-    "Production Supervisor", "Industrial Engineer",
-
-    # ========== RETAIL & E-COMMERCE ==========
-    "Store Manager", "Retail Manager", "Visual Merchandiser",
-    "E-commerce Manager", "Retail Sales Associate",
-    "Merchandising Manager", "Category Manager",
-
-    # ========== REAL ESTATE & CONSTRUCTION ==========
-    "Real Estate Agent", "Property Manager", "Leasing Consultant",
-    "Construction Manager", "Civil Engineer", "Architect",
-    "Project Engineer", "Estimator", "Site Supervisor",
-
-    # ========== MEDIA & COMMUNICATIONS ==========
-    "Content Writer", "Copywriter", "Technical Writer",
-    "Journalist", "Editor", "Public Relations Manager",
-    "Communications Manager", "Social Media Coordinator",
-
-    # ========== SCIENCE & RESEARCH ==========
-    "Research Scientist", "Lab Technician", "Biologist",
-    "Chemist", "Environmental Scientist", "Research Associate",
-
-    # ========== SKILLED TRADES ==========
-    "Electrician", "Plumber", "HVAC Technician",
-    "Mechanic", "Welder", "Carpenter", "Painter",
-
-    # ========== TRANSPORTATION ==========
-    "Driver", "Truck Driver", "Delivery Driver",
-    "Pilot", "Flight Attendant", "Dispatcher",
-
-    # ========== GOVERNMENT & PUBLIC SERVICE ==========
-    "Policy Analyst", "Program Coordinator", "Public Administrator",
-    "Urban Planner", "Emergency Management Specialist",
-
-    # ========== NON-PROFIT & SOCIAL SERVICES ==========
-    "Program Manager", "Grant Writer", "Community Outreach Coordinator",
-    "Nonprofit Director", "Fundraising Manager",
-
-    # ========== AGRICULTURE & ENVIRONMENT ==========
-    "Agricultural Engineer", "Farm Manager", "Sustainability Consultant",
-    "Environmental Consultant", "Conservation Specialist",
-
-    # ========== ENTRY LEVEL & GENERAL ==========
-    "Administrative Assistant", "Office Manager", "Executive Assistant",
-    "Receptionist", "Data Entry Clerk", "Intern"
+    # ========== OTHER COMMON MODERN ROLES ==========
+    "Virtual Assistant", "Freelancer", "Data Entry Clerk",
+    "Research Assistant", "Business Development Manager",
+    "Community Manager", "Operations Coordinator",
+    "E-commerce Manager", "Product Designer",
+    "Marketplace Specialist", "Fulfillment Associate",
+    "Online Tutor", "Fleet Manager", "Assistant"
 ]
 
 
 @app.task(name='tasks.job_fetching_tasks.fetch_global_jobs')
 def fetch_global_jobs():
     """
-    Fetch jobs for all regions - runs daily at 2 AM
-    With intelligent rate limiting: 20-second delays to avoid 429 errors
+    Fetch 200+ jobs per category across all regions - runs daily at 2 AM
+    Strategy: Fetch from multiple locations per category to reach 200+ jobs
+    With intelligent rate limiting: 15-25 second delays to avoid 429 errors
     """
     import time
     import random
 
     print(f"[{datetime.now()}] Starting global job fetching with rate limiting...")
-    print(f"Total categories: {len(JOB_CATEGORIES)}")
-    print(f"Total locations: {sum(len(locs) for locs in LOCATIONS.values())}")
-    print(f"Estimated duration: 6-8 hours (with 20s delays)")
+    print(f"📊 Total categories: {len(JOB_CATEGORIES)} (ALL industries - Tech, Business, Healthcare, etc.)")
+    print(f"📍 Total locations: {sum(len(locs) for locs in LOCATIONS.values())} across 4 regions")
+    print(f"🎯 Goal: 200+ jobs per category")
+    print(f"⏱️  Estimated duration: 8-12 hours (with 15-25s delays)")
+    print(f"🌍 This is a GLOBAL job platform - fetching jobs for everyone!")
     print()
 
     aggregator = JobAggregator()
@@ -259,24 +186,37 @@ def fetch_global_jobs():
     total_searches = 0
     failed_searches = 0
 
-    for region, locations in LOCATIONS.items():
-        print(f"\n📍 Region: {region}")
+    # NEW STRATEGY: For each category, fetch from ALL locations until we have 200+ jobs
+    for category_index, category in enumerate(JOB_CATEGORIES, 1):
+        print(f"\n{'='*70}")
+        print(f"📋 CATEGORY {category_index}/{len(JOB_CATEGORIES)}: {category}")
+        print(f"{'='*70}")
 
-        for location in locations:
-            for category in JOB_CATEGORIES:  # ALL 260 categories per location
+        category_jobs_count = 0
+        category_target = 200
+
+        # Fetch from all regions for this category
+        for region, locations in LOCATIONS.items():
+            if category_jobs_count >= category_target:
+                print(f"   ✅ Target reached ({category_jobs_count} jobs), moving to next category")
+                break
+
+            for location in locations:
+                if category_jobs_count >= category_target:
+                    break
+
                 total_searches += 1
 
                 try:
                     # Add delay BEFORE each search to respect rate limits
-                    # Random delay between 15-25 seconds to avoid patterns
                     delay = random.uniform(15, 25)
-                    print(f"\n   [{total_searches}/{len(JOB_CATEGORIES) * sum(len(locs) for locs in LOCATIONS.values())}] Waiting {delay:.1f}s before searching: {category} in {location}")
+                    print(f"\n   [{category_jobs_count}/{category_target}] Waiting {delay:.1f}s before: {location}")
                     time.sleep(delay)
 
                     result = aggregator.search_all_sources(
                         query=category,
                         location=location,
-                        limit_per_source=100  # 100 jobs per source (4 sources)
+                        limit_per_source=100  # 100 jobs per source (4 sources = 400 potential)
                     )
 
                     jobs = result.get('jobs', [])
@@ -284,17 +224,19 @@ def fetch_global_jobs():
                     # Save jobs to database
                     saved_count = 0
                     for job in jobs:
-                        job_hash = f"{job.get('title', '').lower()}::{job.get('company', '').lower()}::{job.get('location', '').lower()}"
+                        job_hash = f"{job.get('title', '').lower()}::{job.get('company', {}).get('name', '').lower()}::{job.get('location', {}).get('formatted', '').lower()}"
 
                         if not jobs_collection.find_one({'job_hash': job_hash}):
                             job['job_hash'] = job_hash
-                            job['scraped_at'] = datetime.utcnow()
-                            job['is_active'] = True
+                            job['scrapedAt'] = datetime.utcnow()
+                            job['isActive'] = True
+                            job['category'] = category  # Tag with category
                             jobs_collection.insert_one(job)
                             saved_count += 1
                             total_saved += 1
+                            category_jobs_count += 1
 
-                    print(f"   ✅ {category} in {location}: {len(jobs)} jobs retrieved, {saved_count} new jobs saved")
+                    print(f"   ✅ {len(jobs)} fetched, {saved_count} new saved | Category total: {category_jobs_count}")
 
                 except Exception as e:
                     error_msg = str(e)
@@ -309,49 +251,83 @@ def fetch_global_jobs():
 
                     continue
 
-    print(f"\n✅ Global job fetching complete. Saved {total_saved} new jobs.")
+        print(f"\n   📊 {category}: {category_jobs_count} jobs saved")
+
+    print(f"\n{'='*70}")
+    print(f"✅ Global job fetching complete!")
+    print(f"💾 Total new jobs saved: {total_saved}")
+    print(f"📊 Total searches: {total_searches}")
+    print(f"❌ Failed searches: {failed_searches}")
+    print(f"{'='*70}")
+
     return {'total_saved': total_saved, 'timestamp': datetime.now().isoformat()}
 
 
 @app.task(name='tasks.job_fetching_tasks.fetch_kenya_jobs')
 def fetch_kenya_jobs():
     """
-    Fetch jobs for Kenya only - runs twice daily
-    Priority region for frequent updates
+    Fetch 200+ jobs per category for Kenya - runs twice daily
+    Priority region for frequent updates with 200+ jobs per category
     """
+    import time
+    import random
+
     print(f"[{datetime.now()}] Starting Kenya job fetching...")
+    print(f"🎯 Goal: 200+ jobs per category for Kenya")
+    print(f"📊 Categories: {len(JOB_CATEGORIES)}")
+    print()
 
     aggregator = JobAggregator()
     db = get_database()
     jobs_collection = db['jobs']
 
     total_saved = 0
+    kenya_locations = LOCATIONS['Kenya']
 
-    for location in LOCATIONS['Kenya']:
-        for category in JOB_CATEGORIES:
+    # Fetch 200+ jobs per category
+    for category_index, category in enumerate(JOB_CATEGORIES, 1):
+        print(f"\n[{category_index}/{len(JOB_CATEGORIES)}] 📋 {category}")
+
+        category_jobs_count = 0
+        category_target = 200
+
+        for location in kenya_locations:
+            if category_jobs_count >= category_target:
+                print(f"   ✅ Target reached ({category_jobs_count} jobs)")
+                break
+
             try:
+                # Small delay to avoid rate limits
+                delay = random.uniform(10, 20)
+                time.sleep(delay)
+
                 result = aggregator.search_all_sources(
                     query=category,
                     location=location,
-                    limit_per_source=100  # Fetch 100 jobs per source
+                    limit_per_source=100  # 100 per source × 4 sources = 400 potential
                 )
 
                 jobs = result.get('jobs', [])
+                saved_count = 0
 
                 for job in jobs:
-                    job_hash = f"{job.get('title', '').lower()}::{job.get('company', '').lower()}::{job.get('location', '').lower()}"
+                    job_hash = f"{job.get('title', '').lower()}::{job.get('company', {}).get('name', '').lower()}::{job.get('location', {}).get('formatted', '').lower()}"
 
                     if not jobs_collection.find_one({'job_hash': job_hash}):
                         job['job_hash'] = job_hash
-                        job['scraped_at'] = datetime.utcnow()
-                        job['is_active'] = True
+                        job['scrapedAt'] = datetime.utcnow()
+                        job['isActive'] = True
+                        job['category'] = category
+                        job['region'] = 'Kenya'
                         jobs_collection.insert_one(job)
+                        saved_count += 1
                         total_saved += 1
+                        category_jobs_count += 1
 
-                print(f"   ✅ {category} in {location}: {len(jobs)} jobs")
+                print(f"   {location}: {saved_count} new | Total: {category_jobs_count}")
 
             except Exception as e:
-                print(f"   ❌ Error: {str(e)}")
+                print(f"   ❌ Error in {location}: {str(e)}")
                 continue
 
     print(f"\n✅ Kenya job fetching complete. Saved {total_saved} new jobs.")
