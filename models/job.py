@@ -1,4 +1,5 @@
 """Job model and operations."""
+import re
 from datetime import datetime
 from bson import ObjectId
 from config.database import get_jobs_collection
@@ -80,9 +81,9 @@ class Job:
             if 'city' in filters and filters['city']:
                 query['location.city'] = {'$regex': filters['city'], '$options': 'i'}
             if 'state' in filters and filters['state']:
-                query['location.state'] = filters['state']
+                query['location.state'] = {'$regex': f'^{re.escape(filters["state"])}$', '$options': 'i'}
             if 'country' in filters and filters['country']:
-                query['location.country'] = filters['country']
+                query['location.country'] = {'$regex': f'^{re.escape(filters["country"])}$', '$options': 'i'}
 
             # Remote filter
             if 'remoteOnly' in filters and filters['remoteOnly']:
@@ -96,23 +97,43 @@ class Job:
                 # Filter jobs where salary.min exists and is <= maxSalary
                 query['salary.min'] = {'$lte': filters['maxSalary'], '$ne': None}
 
-            # Employment type filter
+            # Employment type filter (case-insensitive with format normalization)
             if 'jobTypes' in filters and filters['jobTypes']:
-                query['employment.type'] = {'$in': filters['jobTypes']}
+                # Create regex pattern that matches any of the job types (case-insensitive)
+                # This matches: "full-time", "full time", "Full-time", "Full Time", etc.
+                patterns = []
+                for job_type in filters['jobTypes']:
+                    # Normalize the pattern to handle both spaces and hyphens
+                    # Replace any space or hyphen with pattern that matches either
+                    pattern = re.sub(r'[ -]', '[ -]', job_type)
+                    patterns.append(pattern)
 
-            # Industry filter
+                # Combine all patterns with OR (|)
+                combined_pattern = '|'.join([f'^{p}$' for p in patterns])
+                query['employment.type'] = {'$regex': combined_pattern, '$options': 'i'}
+
+            # Industry filter (case-insensitive)
             if 'industries' in filters and filters['industries']:
-                query['company.industry'] = {'$in': filters['industries']}
+                # Create case-insensitive regex pattern for industries
+                industry_patterns = [f'^{re.escape(ind)}$' for ind in filters['industries']]
+                combined_industry_pattern = '|'.join(industry_patterns)
+                query['company.industry'] = {'$regex': combined_industry_pattern, '$options': 'i'}
 
-            # Role level / Experience level filter
+            # Role level / Experience level filter (case-insensitive)
             if 'experienceLevels' in filters and filters['experienceLevels']:
-                query['employment.level'] = {'$in': filters['experienceLevels']}
+                level_patterns = [f'^{re.escape(level)}$' for level in filters['experienceLevels']]
+                combined_level_pattern = '|'.join(level_patterns)
+                query['employment.level'] = {'$regex': combined_level_pattern, '$options': 'i'}
             elif 'roleLevels' in filters and filters['roleLevels']:
-                query['employment.level'] = {'$in': filters['roleLevels']}
+                level_patterns = [f'^{re.escape(level)}$' for level in filters['roleLevels']]
+                combined_level_pattern = '|'.join(level_patterns)
+                query['employment.level'] = {'$regex': combined_level_pattern, '$options': 'i'}
 
-            # Company size filter
+            # Company size filter (case-insensitive)
             if 'companySize' in filters and filters['companySize']:
-                query['company.size'] = {'$in': filters['companySize']}
+                size_patterns = [f'^{re.escape(size)}$' for size in filters['companySize']]
+                combined_size_pattern = '|'.join(size_patterns)
+                query['company.size'] = {'$regex': combined_size_pattern, '$options': 'i'}
 
             # Date posted filter
             if 'datePosted' in filters and filters['datePosted']:
@@ -162,7 +183,9 @@ class Job:
             if 'city' in filters and filters['city']:
                 query['location.city'] = {'$regex': filters['city'], '$options': 'i'}
             if 'state' in filters and filters['state']:
-                query['location.state'] = filters['state']
+                query['location.state'] = {'$regex': f'^{re.escape(filters["state"])}$', '$options': 'i'}
+            if 'country' in filters and filters['country']:
+                query['location.country'] = {'$regex': f'^{re.escape(filters["country"])}$', '$options': 'i'}
 
             if 'remoteOnly' in filters and filters['remoteOnly']:
                 query['location.remote'] = True
@@ -173,23 +196,41 @@ class Job:
             if 'maxSalary' in filters and filters['maxSalary']:
                 query['salary.min'] = {'$lte': filters['maxSalary'], '$ne': None}
 
-            # Job types
+            # Job types (case-insensitive with format normalization)
             if 'jobTypes' in filters and filters['jobTypes']:
-                query['employment.type'] = {'$in': filters['jobTypes']}
+                # Create regex pattern that matches any of the job types (case-insensitive)
+                patterns = []
+                for job_type in filters['jobTypes']:
+                    # Normalize the pattern to handle both spaces and hyphens
+                    # Replace any space or hyphen with pattern that matches either
+                    pattern = re.sub(r'[ -]', '[ -]', job_type)
+                    patterns.append(pattern)
 
-            # Industries
+                # Combine all patterns with OR (|)
+                combined_pattern = '|'.join([f'^{p}$' for p in patterns])
+                query['employment.type'] = {'$regex': combined_pattern, '$options': 'i'}
+
+            # Industries (case-insensitive)
             if 'industries' in filters and filters['industries']:
-                query['company.industry'] = {'$in': filters['industries']}
+                industry_patterns = [f'^{re.escape(ind)}$' for ind in filters['industries']]
+                combined_industry_pattern = '|'.join(industry_patterns)
+                query['company.industry'] = {'$regex': combined_industry_pattern, '$options': 'i'}
 
-            # Experience levels
+            # Experience levels (case-insensitive)
             if 'experienceLevels' in filters and filters['experienceLevels']:
-                query['employment.level'] = {'$in': filters['experienceLevels']}
+                level_patterns = [f'^{re.escape(level)}$' for level in filters['experienceLevels']]
+                combined_level_pattern = '|'.join(level_patterns)
+                query['employment.level'] = {'$regex': combined_level_pattern, '$options': 'i'}
             elif 'roleLevels' in filters and filters['roleLevels']:
-                query['employment.level'] = {'$in': filters['roleLevels']}
+                level_patterns = [f'^{re.escape(level)}$' for level in filters['roleLevels']]
+                combined_level_pattern = '|'.join(level_patterns)
+                query['employment.level'] = {'$regex': combined_level_pattern, '$options': 'i'}
 
-            # Company size
+            # Company size (case-insensitive)
             if 'companySize' in filters and filters['companySize']:
-                query['company.size'] = {'$in': filters['companySize']}
+                size_patterns = [f'^{re.escape(size)}$' for size in filters['companySize']]
+                combined_size_pattern = '|'.join(size_patterns)
+                query['company.size'] = {'$regex': combined_size_pattern, '$options': 'i'}
 
             # Date posted
             if 'datePosted' in filters and filters['datePosted']:

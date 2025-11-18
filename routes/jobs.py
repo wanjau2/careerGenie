@@ -82,6 +82,18 @@ def get_jobs():
                 'remoteOnly': preferences.get('remoteOnly', False)
             }
 
+            # Use profile jobTitle as keywords filter if available
+            job_title = profile.get('jobTitle', '').strip()
+            if job_title:
+                filters['keywords'] = job_title
+
+            # Use profile location as default location filter if available
+            location = profile.get('location', {})
+            if location.get('city'):
+                filters['city'] = location.get('city')
+            if location.get('country'):
+                filters['country'] = location.get('country')
+
             # Get salary expectations from preferences first, fallback to profile
             expected_salary = preferences.get('expectedSalary') or profile.get('expectedSalary', {})
             if expected_salary:
