@@ -11,6 +11,7 @@ files_bp = Blueprint('files', __name__, url_prefix='/api/files')
 
 
 @files_bp.route('/upload-avatar', methods=['POST'])
+@files_bp.route('/upload/avatar', methods=['POST'])  # Alias for Flutter compatibility
 @jwt_required()
 def upload_avatar():
     """
@@ -218,6 +219,114 @@ def delete_file():
 
     except Exception as e:
         return jsonify(format_error_response(f"Server error: {str(e)}", 500))
+
+
+@files_bp.route('/delete/avatar', methods=['DELETE'])
+@jwt_required()
+def delete_avatar():
+    """
+    Delete user's profile picture.
+
+    Returns:
+        JSON response confirming deletion
+    """
+    try:
+        user_id = get_jwt_identity()
+
+        # Get user's current profile picture
+        user = User.find_by_id(user_id)
+        if not user:
+            return jsonify(format_error_response("User not found", 404))
+
+        profile_picture = user.get('profile', {}).get('profilePicture')
+
+        if not profile_picture:
+            return jsonify(format_error_response("No profile picture to delete", 404))
+
+        # Delete file from filesystem
+        FileService.delete_file(profile_picture)
+
+        # Update user profile to remove picture reference
+        User.update_profile_picture(user_id, None)
+
+        return jsonify({'message': 'Profile picture deleted successfully'}), 200
+
+    except Exception as e:
+        return jsonify(format_error_response(f"Server error: {str(e)}", 500))
+
+
+@files_bp.route('/delete/resume', methods=['DELETE'])
+@jwt_required()
+def delete_resume():
+    """
+    Delete user's resume.
+
+    Returns:
+        JSON response confirming deletion
+    """
+    try:
+        user_id = get_jwt_identity()
+
+        # Get user's current resume
+        user = User.find_by_id(user_id)
+        if not user:
+            return jsonify(format_error_response("User not found", 404))
+
+        resume = user.get('profile', {}).get('resume')
+
+        if not resume:
+            return jsonify(format_error_response("No resume to delete", 404))
+
+        # Delete file from filesystem
+        FileService.delete_file(resume)
+
+        # Update user profile to remove resume reference
+        User.update_resume(user_id, None)
+
+        return jsonify({'message': 'Resume deleted successfully'}), 200
+
+    except Exception as e:
+        return jsonify(format_error_response(f"Server error: {str(e)}", 500))
+
+
+@files_bp.route('/profiles/<filename>')
+def serve_profile_picture(filename):
+    """
+    Serve profile pictures.
+
+    Args:
+        filename: Profile picture filename
+
+    Returns:
+        Profile picture file
+    """
+    try:
+        upload_folder = Config.UPLOAD_FOLDER
+        profile_path = os.path.join('profiles', filename)
+        return send_from_directory(upload_folder, profile_path)
+
+    except Exception as e:
+        return jsonify(format_error_response(f"File not found: {str(e)}", 404))
+
+
+@files_bp.route('/resumes/<filename>')
+def serve_resume(filename):
+    """
+    Serve resume files.
+
+    Args:
+        filename: Resume filename
+
+    Returns:
+        Resume file
+    """
+    try:
+        upload_folder = Config.UPLOAD_FOLDER
+        resume_path = os.path.join('resumes', filename)
+        return send_from_directory(upload_folder, resume_path)
+
+    except Exception as e:
+        return jsonify(format_error_response(f"File not found: {str(e)}", 404))
 
 
 # Serve uploaded files (for development - in production, use nginx or CDN)

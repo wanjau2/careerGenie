@@ -66,6 +66,7 @@ class Config:
     # External APIs
     JOB_API_KEY = os.getenv('JOB_API_KEY')
     OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')  # For AI features
+    GEMINI_API_KEY = os.getenv('GOOGLE_GEMINI_API_KEY')  # For Gemini AI
 
     # DigitalOcean Spaces (optional)
     DO_SPACES_KEY = os.getenv('DO_SPACES_KEY')

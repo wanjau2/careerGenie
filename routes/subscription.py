@@ -7,7 +7,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-subscription_bp = Blueprint('subscription', __name__)
+subscription_bp = Blueprint('subscription', __name__, url_prefix='/api/subscription')
 
 
 @subscription_bp.route('/track-swipe', methods=['POST'])

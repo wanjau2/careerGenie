@@ -216,22 +216,47 @@ def parse_resume():
         if merge_with_profile:
             # Update user profile with parsed data
             users = get_users_collection()
+            personal_info = parsed_data.get('personalInfo', {})
+
+            # Build update document dynamically
+            update_doc = {
+                'resumes.parsed': parsed_data
+            }
+
+            # Add phone if present
+            if personal_info.get('phone'):
+                update_doc['profile.phone'] = personal_info['phone']
+
+            # Add location if present
+            if personal_info.get('location'):
+                update_doc['profile.location'] = {'formatted': personal_info['location']}
+
+            # Add full name if present
+            if personal_info.get('fullName'):
+                update_doc['profile.fullName'] = personal_info['fullName']
+
+            # Add experiences
+            if parsed_data.get('experiences'):
+                update_doc['workExperience'] = parsed_data['experiences']
+
+            # Add education
+            if parsed_data.get('education'):
+                update_doc['education'] = parsed_data['education']
+
+            # Add skills
+            if parsed_data.get('skills'):
+                update_doc['skills'] = [
+                    {'name': skill, 'source': 'parsed', 'proficiency': 'intermediate'}
+                    for skill in parsed_data.get('skills', [])
+                ]
+
+            # Add summary if present
+            if parsed_data.get('summary'):
+                update_doc['professional.summary'] = parsed_data['summary']
+
             users.update_one(
                 {'_id': ObjectId(user_id)},
-                {
-                    '$set': {
-                        'profile.phone': parsed_data.get('contactInfo', {}).get('phone'),
-                        'profile.location': parsed_data.get('contactInfo', {}).get('location', {}),
-                        'workExperience': parsed_data.get('workExperience', []),
-                        'education': parsed_data.get('education', []),
-                        'skills': [
-                            {'name': skill, 'source': 'parsed', 'proficiency': 'intermediate'}
-                            for skill in parsed_data.get('skills', [])
-                        ],
-                        'professional.summary': parsed_data.get('summary', ''),
-                        'resumes.parsed': parsed_data
-                    }
-                }
+                {'$set': update_doc}
             )
 
         return jsonify({

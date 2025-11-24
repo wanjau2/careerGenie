@@ -114,3 +114,100 @@ def logout():
     return jsonify({
         'message': 'Logout successful. Please discard your tokens.'
     }), 200
+
+
+@auth_bp.route('/forgot-password', methods=['POST'])
+def forgot_password():
+    """
+    Request password reset.
+
+    Request body:
+    {
+        "email": "user@example.com"
+    }
+
+    Returns:
+        JSON response confirming password reset request
+    """
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify(format_error_response("No data provided", 400))
+
+        response, status_code = AuthService.forgot_password(data)
+        return jsonify(response), status_code
+
+    except Exception as e:
+        return jsonify(format_error_response(f"Server error: {str(e)}", 500))
+
+
+@auth_bp.route('/reset-password', methods=['POST'])
+def reset_password():
+    """
+    Reset password with token.
+
+    Request body:
+    {
+        "token": "reset_token_here",
+        "newPassword": "NewSecurePass123"
+    }
+
+    Returns:
+        JSON response confirming password reset
+    """
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify(format_error_response("No data provided", 400))
+
+        response, status_code = AuthService.reset_password(data)
+        return jsonify(response), status_code
+
+    except Exception as e:
+        return jsonify(format_error_response(f"Server error: {str(e)}", 500))
+
+
+@auth_bp.route('/change-password', methods=['POST'])
+@jwt_required()
+def change_password():
+    """
+    Change password for logged-in user.
+
+    Request body:
+    {
+        "currentPassword": "CurrentPass123",
+        "newPassword": "NewSecurePass123"
+    }
+
+    Returns:
+        JSON response confirming password change
+    """
+    try:
+        user_id = get_jwt_identity()
+        data = request.get_json()
+        if not data:
+            return jsonify(format_error_response("No data provided", 400))
+
+        response, status_code = AuthService.change_password(user_id, data)
+        return jsonify(response), status_code
+
+    except Exception as e:
+        return jsonify(format_error_response(f"Server error: {str(e)}", 500))
+
+
+@auth_bp.route('/verify-token', methods=['GET', 'POST'])
+@jwt_required()
+def verify_token():
+    """
+    Verify if JWT token is valid.
+
+    Returns:
+        JSON response with token validity status
+    """
+    try:
+        user_id = get_jwt_identity()
+        response, status_code = AuthService.verify_token(user_id)
+        return jsonify(response), status_code
+
+    except Exception as e:
+        return jsonify(format_error_response(f"Server error: {str(e)}", 500))

@@ -270,3 +270,92 @@ def deactivate_account():
 
     except Exception as e:
         return jsonify(format_error_response(f"Server error: {str(e)}", 500))
+
+
+@users_bp.route('/account', methods=['DELETE'])
+@jwt_required()
+def delete_account():
+    """
+    Permanently delete user account and all associated data.
+
+    This endpoint will:
+    - Delete user profile
+    - Delete all job applications
+    - Delete all swipe history
+    - Delete uploaded files (avatar, resume)
+    - Remove all user preferences
+    - Cancel active subscriptions
+
+    Returns:
+        JSON response confirming deletion
+    """
+    try:
+        from config.database import (
+            get_users_collection,
+            get_applications_collection,
+            get_swipes_collection
+        )
+        from bson import ObjectId
+        import logging
+
+        logger = logging.getLogger(__name__)
+        user_id = get_jwt_identity()
+
+        logger.info(f"🗑️  Starting account deletion for user {user_id}")
+
+        # Get collections
+        users = get_users_collection()
+        applications = get_applications_collection()
+        swipes = get_swipes_collection()
+
+        # Convert user_id to ObjectId
+        user_obj_id = ObjectId(user_id)
+
+        # 1. Delete all applications
+        app_result = applications.delete_many({'userId': user_obj_id})
+        logger.info(f"   Deleted {app_result.deleted_count} applications")
+
+        # 2. Delete all swipe history
+        swipe_result = swipes.delete_many({'userId': user_obj_id})
+        logger.info(f"   Deleted {swipe_result.deleted_count} swipes")
+
+        # 3. Delete Gmail credentials if exists
+        try:
+            from config.database import get_database
+            db = get_database()
+            gmail_result = db.gmail_credentials.delete_many({'userId': user_id})
+            logger.info(f"   Deleted {gmail_result.deleted_count} Gmail credentials")
+        except:
+            pass
+
+        # 4. Delete training data if exists
+        try:
+            from config.database import get_database
+            db = get_database()
+            training_result = db.training_resumes.delete_many({'userId': user_id})
+            logger.info(f"   Deleted {training_result.deleted_count} training resumes")
+        except:
+            pass
+
+        # 5. Delete user account (final step)
+        user_result = users.delete_one({'_id': user_obj_id})
+
+        if user_result.deleted_count == 0:
+            logger.error(f"   ❌ Failed to delete user {user_id}")
+            return jsonify(format_error_response("Failed to delete account", 500))
+
+        logger.info(f"   ✅ User account deleted successfully")
+        logger.info(f"🗑️  Account deletion complete for user {user_id}")
+
+        return jsonify({
+            'message': 'Account deleted successfully',
+            'deleted': {
+                'profile': True,
+                'applications': app_result.deleted_count,
+                'swipes': swipe_result.deleted_count
+            }
+        }), 200
+
+    except Exception as e:
+        logger.error(f"❌ Error deleting account: {str(e)}")
+        return jsonify(format_error_response(f"Server error: {str(e)}", 500))

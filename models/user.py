@@ -308,6 +308,44 @@ class User:
         return True, swipes_remaining
 
     @staticmethod
+    def decrement_swipes(user_id):
+        """
+        Decrement user swipe count (for undo functionality).
+
+        Args:
+            user_id: User ID
+
+        Returns:
+            bool: True if successful
+        """
+        users = get_users_collection()
+
+        if isinstance(user_id, str):
+            user_id = ObjectId(user_id)
+
+        # Get current user data
+        user = users.find_one({'_id': user_id})
+        if not user:
+            return False
+
+        subscription = user.get('subscription', {})
+        swipes_used = subscription.get('swipesUsed', 0)
+
+        # Don't decrement below 0
+        if swipes_used <= 0:
+            return False
+
+        users.update_one(
+            {'_id': user_id},
+            {
+                '$inc': {'subscription.swipesUsed': -1},
+                '$set': {'updatedAt': datetime.utcnow()}
+            }
+        )
+
+        return True
+
+    @staticmethod
     def get_swipe_status(user_id):
         """
         Get user's current swipe status.
@@ -395,3 +433,100 @@ class User:
         )
 
         return result.modified_count > 0
+
+    @staticmethod
+    def update_password(user_id, new_password):
+        """
+        Update user password.
+
+        Args:
+            user_id: User ID (string or ObjectId)
+            new_password: New password (plain text)
+
+        Returns:
+            bool: True if successful
+        """
+        users = get_users_collection()
+
+        if isinstance(user_id, str):
+            user_id = ObjectId(user_id)
+
+        # Hash new password
+        password_hash = bcrypt.hashpw(
+            new_password.encode('utf-8'),
+            bcrypt.gensalt(rounds=Config.BCRYPT_LOG_ROUNDS)
+        ).decode('utf-8')
+
+        result = users.update_one(
+            {'_id': user_id},
+            {
+                '$set': {
+                    'password_hash': password_hash,
+                    'updatedAt': datetime.utcnow()
+                },
+                '$unset': {
+                    'resetToken': '',
+                    'resetTokenExpiry': ''
+                }
+            }
+        )
+
+        return result.modified_count > 0
+
+    @staticmethod
+    def set_reset_token(email):
+        """
+        Generate and store password reset token.
+
+        Args:
+            email: User email
+
+        Returns:
+            tuple: (reset_token, user_id) or (None, None) if user not found
+        """
+        import secrets
+        users = get_users_collection()
+
+        user = users.find_one({'email': email.lower()})
+        if not user:
+            return None, None
+
+        # Generate secure random token
+        reset_token = secrets.token_urlsafe(32)
+
+        # Token expires in 1 hour
+        expiry = datetime.utcnow() + timedelta(hours=1)
+
+        # Store token and expiry
+        users.update_one(
+            {'_id': user['_id']},
+            {
+                '$set': {
+                    'resetToken': reset_token,
+                    'resetTokenExpiry': expiry,
+                    'updatedAt': datetime.utcnow()
+                }
+            }
+        )
+
+        return reset_token, str(user['_id'])
+
+    @staticmethod
+    def verify_reset_token(token):
+        """
+        Verify password reset token and return user.
+
+        Args:
+            token: Reset token
+
+        Returns:
+            dict: User document or None if token invalid/expired
+        """
+        users = get_users_collection()
+
+        user = users.find_one({
+            'resetToken': token,
+            'resetTokenExpiry': {'$gt': datetime.utcnow()}
+        })
+
+        return user

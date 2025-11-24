@@ -716,6 +716,323 @@ def get_applications():
         return jsonify(format_error_response(f"Server error: {str(e)}", 500))
 
 
+@jobs_bp.route('/applications/<application_id>', methods=['GET'])
+@jwt_required()
+def get_application(application_id):
+    """
+    Get a specific application by ID.
+
+    Args:
+        application_id: Application ID
+
+    Returns:
+        JSON response with application details
+    """
+    try:
+        user_id = get_jwt_identity()
+
+        if not is_valid_object_id(application_id):
+            return jsonify(format_error_response("Invalid application ID", 400))
+
+        # Get application
+        application = Application.find_by_id(application_id)
+
+        if not application:
+            return jsonify(format_error_response("Application not found", 404))
+
+        # Verify ownership
+        app_user_id = application['userId'] if isinstance(application['userId'], str) else str(application['userId'])
+        if app_user_id != user_id:
+            return jsonify(format_error_response("Unauthorized", 403))
+
+        # Get job details
+        from config.database import get_jobs_collection
+        jobs_collection = get_jobs_collection()
+        job = jobs_collection.find_one({'_id': application['jobId']})
+
+        if not job:
+            return jsonify(format_error_response("Job not found for this application", 404))
+
+        # Serialize response
+        app_data = serialize_document(application)
+        app_data['jobData'] = serialize_document(job)
+
+        return jsonify({'application': app_data}), 200
+
+    except Exception as e:
+        logger.error(f"Error getting application: {str(e)}")
+        return jsonify(format_error_response(f"Server error: {str(e)}", 500))
+
+
+@jobs_bp.route('/applications/<application_id>/status', methods=['PUT'])
+@jwt_required()
+def update_application_status(application_id):
+    """
+    Update application status.
+
+    Args:
+        application_id: Application ID
+
+    Request body:
+    {
+        "status": "interviewed",  // applied, under_review, interview_scheduled, interviewed, accepted, rejected, withdrawn
+        "note": "Optional status update note"
+    }
+
+    Returns:
+        JSON response with updated application
+    """
+    try:
+        user_id = get_jwt_identity()
+
+        if not is_valid_object_id(application_id):
+            return jsonify(format_error_response("Invalid application ID", 400))
+
+        # Get application
+        application = Application.find_by_id(application_id)
+
+        if not application:
+            return jsonify(format_error_response("Application not found", 404))
+
+        # Verify ownership
+        app_user_id = application['userId'] if isinstance(application['userId'], str) else str(application['userId'])
+        if app_user_id != user_id:
+            return jsonify(format_error_response("Unauthorized", 403))
+
+        # Get request data
+        data = request.get_json()
+        if not data or 'status' not in data:
+            return jsonify(format_error_response("Status is required", 400))
+
+        new_status = data['status']
+        note = data.get('note')
+
+        # Validate status
+        valid_statuses = [
+            'applied', 'under_review', 'interview_scheduled',
+            'interviewed', 'accepted', 'rejected', 'withdrawn'
+        ]
+        if new_status not in valid_statuses:
+            return jsonify(format_error_response(
+                f"Invalid status. Must be one of: {', '.join(valid_statuses)}", 400
+            ))
+
+        # Update status
+        success = Application.update_application_status(application_id, new_status, note)
+
+        if not success:
+            return jsonify(format_error_response("Failed to update status", 500))
+
+        # Get updated application
+        updated_app = Application.find_by_id(application_id)
+
+        # Get job details
+        from config.database import get_jobs_collection
+        jobs_collection = get_jobs_collection()
+        job = jobs_collection.find_one({'_id': updated_app['jobId']})
+
+        # Serialize response
+        app_data = serialize_document(updated_app)
+        if job:
+            app_data['jobData'] = serialize_document(job)
+
+        return jsonify({
+            'message': 'Application status updated successfully',
+            'application': app_data
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Error updating application status: {str(e)}")
+        return jsonify(format_error_response(f"Server error: {str(e)}", 500))
+
+
+@jobs_bp.route('/applications/<application_id>', methods=['DELETE'])
+@jwt_required()
+def delete_application(application_id):
+    """
+    Delete an application.
+
+    Args:
+        application_id: Application ID
+
+    Returns:
+        JSON response confirming deletion
+    """
+    try:
+        user_id = get_jwt_identity()
+
+        if not is_valid_object_id(application_id):
+            return jsonify(format_error_response("Invalid application ID", 400))
+
+        # Get application
+        application = Application.find_by_id(application_id)
+
+        if not application:
+            return jsonify(format_error_response("Application not found", 404))
+
+        # Verify ownership
+        app_user_id = application['userId'] if isinstance(application['userId'], str) else str(application['userId'])
+        if app_user_id != user_id:
+            return jsonify(format_error_response("Unauthorized", 403))
+
+        # Delete application
+        success = Application.delete_application(application_id)
+
+        if not success:
+            return jsonify(format_error_response("Failed to delete application", 500))
+
+        return jsonify({
+            'message': 'Application deleted successfully',
+            'applicationId': application_id
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Error deleting application: {str(e)}")
+        return jsonify(format_error_response(f"Server error: {str(e)}", 500))
+
+
+@jobs_bp.route('/applications/statistics', methods=['GET'])
+@jwt_required()
+def get_application_statistics():
+    """
+    Get application statistics for the current user.
+
+    Returns:
+        JSON response with application statistics
+    """
+    try:
+        user_id = get_jwt_identity()
+
+        # Get all user applications
+        applications = Application.get_user_applications(user_id, status=None, skip=0, limit=1000)
+
+        # Calculate statistics
+        stats = {
+            'total': len(applications),
+            'applied': len([a for a in applications if a.get('status') == 'applied']),
+            'underReview': len([a for a in applications if a.get('status') == 'under_review']),
+            'interviewScheduled': len([a for a in applications if a.get('status') == 'interview_scheduled']),
+            'interviewed': len([a for a in applications if a.get('status') == 'interviewed']),
+            'accepted': len([a for a in applications if a.get('status') == 'accepted']),
+            'rejected': len([a for a in applications if a.get('status') == 'rejected']),
+            'withdrawn': len([a for a in applications if a.get('status') == 'withdrawn'])
+        }
+
+        # Calculate additional metrics
+        if stats['total'] > 0:
+            stats['successRate'] = round((stats['accepted'] / stats['total']) * 100, 2)
+            stats['interviewRate'] = round(((stats['interviewed'] + stats['interviewScheduled']) / stats['total']) * 100, 2)
+        else:
+            stats['successRate'] = 0.0
+            stats['interviewRate'] = 0.0
+
+        # Get recent applications (last 7 days)
+        from datetime import datetime, timedelta
+        week_ago = datetime.utcnow() - timedelta(days=7)
+        recent_apps = [a for a in applications if a.get('appliedAt') and a['appliedAt'] >= week_ago]
+        stats['recentApplications'] = len(recent_apps)
+
+        return jsonify({
+            'statistics': stats
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Error getting application statistics: {str(e)}")
+        return jsonify(format_error_response(f"Server error: {str(e)}", 500))
+
+
+@jobs_bp.route('/applications/auto-apply', methods=['POST'])
+@jwt_required()
+def auto_apply_to_job():
+    """
+    Automatically apply to a job with AI-generated cover letter and resume.
+    Only available for paid users.
+
+    Request body:
+    {
+        "jobId": "job_id_here"
+    }
+
+    Returns:
+        JSON response with application details
+    """
+    try:
+        user_id = get_jwt_identity()
+        data = request.get_json()
+
+        if not data or 'jobId' not in data:
+            return jsonify(format_error_response("Job ID is required", 400))
+
+        job_id = data['jobId']
+
+        if not is_valid_object_id(job_id):
+            return jsonify(format_error_response("Invalid job ID", 400))
+
+        # Check if job exists
+        job = Job.find_by_id(job_id)
+        if not job:
+            return jsonify(format_error_response("Job not found", 404))
+
+        # Get user and check subscription
+        user = User.find_by_id(user_id)
+        if not user:
+            return jsonify(format_error_response("User not found", 404))
+
+        subscription = user.get('subscription', {})
+        plan = subscription.get('plan', 'free')
+
+        if plan != 'paid':
+            return jsonify(format_error_response(
+                "Auto-apply is only available for premium users. Please upgrade your subscription.",
+                403
+            ))
+
+        # Check if already applied
+        existing_apps = Application.get_user_applications(user_id)
+        job_obj_id = ObjectId(job_id)
+
+        for app in existing_apps:
+            if app['jobId'] == job_obj_id:
+                return jsonify(format_error_response("Already applied to this job", 409))
+
+        # Trigger auto-apply
+        from services.auto_apply_service import AutoApplyService
+
+        auto_apply_service = AutoApplyService()
+        result = auto_apply_service.apply_to_job_automatically(
+            user_id=user_id,
+            job_id=job_id,
+            job_data=job,
+            user_profile=user
+        )
+
+        if not result['success']:
+            return jsonify(format_error_response(
+                f"Auto-apply failed: {result.get('error', 'Unknown error')}",
+                500
+            ))
+
+        # Get the created application
+        application = Application.find_by_id(result['applicationId'])
+        if application:
+            app_data = serialize_document(application)
+            app_data['job'] = serialize_document(job)
+        else:
+            app_data = None
+
+        return jsonify({
+            'message': 'Application submitted successfully via auto-apply',
+            'applicationId': result['applicationId'],
+            'coverLetterGenerated': result.get('coverLetterGenerated', False),
+            'resumeCustomized': result.get('resumeCustomized', False),
+            'application': app_data
+        }), 201
+
+    except Exception as e:
+        logger.error(f"Error in auto-apply: {str(e)}")
+        return jsonify(format_error_response(f"Server error: {str(e)}", 500))
+
+
 @jobs_bp.route('/search', methods=['GET'])
 @jwt_required()
 def search_jobs():

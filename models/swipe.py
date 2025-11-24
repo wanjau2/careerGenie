@@ -272,6 +272,24 @@ class Application:
         return list(cursor)
 
     @staticmethod
+    def find_by_id(application_id):
+        """
+        Find application by ID.
+
+        Args:
+            application_id: Application ID (string or ObjectId)
+
+        Returns:
+            dict: Application document or None
+        """
+        applications = get_applications_collection()
+
+        if isinstance(application_id, str):
+            application_id = ObjectId(application_id)
+
+        return applications.find_one({'_id': application_id})
+
+    @staticmethod
     def update_application_status(application_id, status, note=None):
         """
         Update application status.
@@ -304,3 +322,22 @@ class Application:
         )
 
         return result.modified_count > 0
+
+    @staticmethod
+    def delete_application(application_id):
+        """
+        Delete an application.
+
+        Args:
+            application_id: Application ID (string or ObjectId)
+
+        Returns:
+            bool: True if successful
+        """
+        applications = get_applications_collection()
+
+        if isinstance(application_id, str):
+            application_id = ObjectId(application_id)
+
+        result = applications.delete_one({'_id': application_id})
+        return result.deleted_count > 0

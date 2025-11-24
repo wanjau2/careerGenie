@@ -20,6 +20,7 @@ from config.database import init_database, db_manager
 from routes.auth import auth_bp
 from routes.users import users_bp
 from routes.jobs import jobs_bp
+from routes.swipes import swipes_bp
 from routes.files import files_bp
 from routes.onboarding import onboarding_bp
 from routes.resume import resume_bp
@@ -28,6 +29,8 @@ from routes.training import training_bp
 from routes.oauth import oauth_bp
 from routes.subscription import subscription_bp
 from routes.ads import ads_bp
+from routes.email import email_bp
+from routes.documents import documents_bp
 
 # Import utilities
 from utils.helpers import format_error_response
@@ -411,14 +414,17 @@ def register_blueprints(app):
     app.register_blueprint(auth_bp)
     app.register_blueprint(users_bp)
     app.register_blueprint(jobs_bp)
+    app.register_blueprint(swipes_bp)
     app.register_blueprint(files_bp)
     app.register_blueprint(onboarding_bp)
     app.register_blueprint(resume_bp)
     app.register_blueprint(courses_bp)
     app.register_blueprint(training_bp)
+    app.register_blueprint(documents_bp)
     app.register_blueprint(oauth_bp)
     app.register_blueprint(subscription_bp)
     app.register_blueprint(ads_bp)
+    app.register_blueprint(email_bp)
 
     app.logger.info("Blueprints registered")
 
@@ -486,13 +492,10 @@ if __name__ == '__main__':
     debug = os.getenv('DEBUG', 'False').lower() == 'true'
 
     print(f"""
-╔═══════════════════════════════════════════════╗
-║     Career Genie API Server Starting...      ║
-╚═══════════════════════════════════════════════╝
 
-🚀 Server running on: http://localhost:{port}
-📚 API Documentation: http://localhost:{port}/api/docs
-💚 Health Check: http://localhost:{port}/health
+Server running on: http://localhost:{port}
+API Documentation: http://localhost:{port}/api/docs
+Health Check: http://localhost:{port}/health
 
 Press CTRL+C to quit
     """)

@@ -632,3 +632,311 @@ def handle_enrollments():
             'Failed to handle enrollment',
             500
         )), 500
+
+
+@courses_bp.route('/enroll', methods=['POST'])
+@jwt_required()
+def enroll_in_course():
+    """
+    Enroll in a course (alias for POST /enrollments).
+
+    Request body:
+    {
+        "courseId": "course_id_here"
+    }
+
+    Returns:
+        JSON response with enrollment data
+    """
+    try:
+        user_id = get_jwt_identity()
+        data = request.get_json()
+
+        if not data or 'courseId' not in data:
+            return jsonify(format_error_response(
+                'courseId is required',
+                400
+            )), 400
+
+        # Save enrollment to database
+        from config.database import get_database
+        from bson import ObjectId
+        from datetime import datetime
+
+        db = get_database()
+        enrollments_collection = db['course_enrollments']
+
+        if isinstance(user_id, str):
+            user_id_obj = ObjectId(user_id)
+        else:
+            user_id_obj = user_id
+
+        # Check if already enrolled
+        existing = enrollments_collection.find_one({
+            'userId': user_id_obj,
+            'courseId': data['courseId']
+        })
+
+        if existing:
+            return jsonify(format_error_response(
+                'Already enrolled in this course',
+                409
+            )), 409
+
+        enrollment_data = {
+            'courseId': data['courseId'],
+            'userId': user_id_obj,
+            'status': 'active',
+            'progress': 0,
+            'enrolledAt': datetime.utcnow()
+        }
+
+        result = enrollments_collection.insert_one(enrollment_data)
+
+        enrollment = {
+            'id': str(result.inserted_id),
+            'courseId': data['courseId'],
+            'userId': user_id,
+            'status': 'active',
+            'progress': 0,
+            'enrolledAt': datetime.utcnow().isoformat()
+        }
+
+        return jsonify(format_success_response(
+            data={'enrollment': enrollment},
+            message='Enrolled successfully'
+        )), 201
+
+    except Exception as e:
+        logger.error(f"Error enrolling in course: {str(e)}")
+        return jsonify(format_error_response(
+            'Failed to enroll in course',
+            500
+        )), 500
+
+
+@courses_bp.route('/enrollments/<enrollment_id>/progress', methods=['PUT'])
+@jwt_required()
+def update_enrollment_progress(enrollment_id):
+    """
+    Update progress for a course enrollment.
+
+    Request body:
+    {
+        "progress": 75,  // Progress percentage (0-100)
+        "completed": false,  // Optional: Mark as completed
+        "lastAccessedAt": "2025-11-22T10:30:00Z"  // Optional
+    }
+
+    Returns:
+        JSON response with updated enrollment
+    """
+    try:
+        user_id = get_jwt_identity()
+        data = request.get_json()
+
+        if not data:
+            return jsonify(format_error_response(
+                'Request body is required',
+                400
+            )), 400
+
+        from config.database import get_database
+        from bson import ObjectId
+        from datetime import datetime
+
+        db = get_database()
+        enrollments_collection = db['course_enrollments']
+
+        # Validate enrollment ID
+        try:
+            enrollment_obj_id = ObjectId(enrollment_id)
+        except:
+            return jsonify(format_error_response(
+                'Invalid enrollment ID',
+                400
+            )), 400
+
+        # Get enrollment and verify ownership
+        if isinstance(user_id, str):
+            user_id_obj = ObjectId(user_id)
+        else:
+            user_id_obj = user_id
+
+        enrollment = enrollments_collection.find_one({
+            '_id': enrollment_obj_id,
+            'userId': user_id_obj
+        })
+
+        if not enrollment:
+            return jsonify(format_error_response(
+                'Enrollment not found or unauthorized',
+                404
+            )), 404
+
+        # Build update document
+        update_doc = {}
+
+        if 'progress' in data:
+            progress = int(data['progress'])
+            if progress < 0 or progress > 100:
+                return jsonify(format_error_response(
+                    'Progress must be between 0 and 100',
+                    400
+                )), 400
+            update_doc['progress'] = progress
+
+        if 'completed' in data:
+            update_doc['completed'] = bool(data['completed'])
+            if data['completed']:
+                update_doc['completedAt'] = datetime.utcnow()
+                update_doc['progress'] = 100
+
+        if 'lastAccessedAt' in data:
+            try:
+                update_doc['lastAccessedAt'] = datetime.fromisoformat(
+                    data['lastAccessedAt'].replace('Z', '+00:00')
+                )
+            except:
+                update_doc['lastAccessedAt'] = datetime.utcnow()
+        else:
+            update_doc['lastAccessedAt'] = datetime.utcnow()
+
+        update_doc['updatedAt'] = datetime.utcnow()
+
+        # Update enrollment
+        result = enrollments_collection.update_one(
+            {'_id': enrollment_obj_id},
+            {'$set': update_doc}
+        )
+
+        if result.modified_count == 0:
+            return jsonify(format_error_response(
+                'Failed to update progress',
+                500
+            )), 500
+
+        # Get updated enrollment
+        updated_enrollment = enrollments_collection.find_one({'_id': enrollment_obj_id})
+
+        enrollment_data = {
+            'id': str(updated_enrollment['_id']),
+            'courseId': updated_enrollment.get('courseId'),
+            'userId': str(updated_enrollment.get('userId')),
+            'status': updated_enrollment.get('status', 'active'),
+            'progress': updated_enrollment.get('progress', 0),
+            'completed': updated_enrollment.get('completed', False),
+            'enrolledAt': updated_enrollment.get('enrolledAt').isoformat() if updated_enrollment.get('enrolledAt') else None,
+            'lastAccessedAt': updated_enrollment.get('lastAccessedAt').isoformat() if updated_enrollment.get('lastAccessedAt') else None,
+            'completedAt': updated_enrollment.get('completedAt').isoformat() if updated_enrollment.get('completedAt') else None,
+            'updatedAt': updated_enrollment.get('updatedAt').isoformat() if updated_enrollment.get('updatedAt') else None
+        }
+
+        return jsonify(format_success_response(
+            data={'enrollment': enrollment_data},
+            message='Progress updated successfully'
+        )), 200
+
+    except Exception as e:
+        logger.error(f"Error updating enrollment progress: {str(e)}")
+        return jsonify(format_error_response(
+            'Failed to update progress',
+            500
+        )), 500
+
+
+@courses_bp.route('/skill-impact/<skill>', methods=['GET'])
+@jwt_required()
+def get_skill_impact(skill):
+    """
+    Get the impact and value of learning a specific skill.
+
+    Returns information about:
+    - Job demand for the skill
+    - Average salary increase
+    - Related job titles
+    - Recommended courses
+    - Market trends
+
+    Returns:
+        JSON response with skill impact data
+    """
+    try:
+        # Decode URL-encoded skill name
+        from urllib.parse import unquote
+        skill_name = unquote(skill)
+
+        # Get job demand data (mock data - replace with real analytics)
+        from config.database import get_database
+        db = get_database()
+        jobs_collection = db['jobs']
+
+        # Count jobs that mention this skill
+        jobs_with_skill = jobs_collection.count_documents({
+            '$or': [
+                {'skills': {'$regex': skill_name, '$options': 'i'}},
+                {'description': {'$regex': skill_name, '$options': 'i'}},
+                {'requirements': {'$regex': skill_name, '$options': 'i'}}
+            ],
+            'isActive': True
+        })
+
+        # Get related courses
+        courses_collection = db['courses']
+        related_courses = list(courses_collection.find({
+            '$or': [
+                {'title': {'$regex': skill_name, '$options': 'i'}},
+                {'description': {'$regex': skill_name, '$options': 'i'}},
+                {'skills': {'$regex': skill_name, '$options': 'i'}}
+            ]
+        }).limit(5))
+
+        # Serialize courses
+        from utils.helpers import serialize_documents
+        courses_data = serialize_documents(related_courses)
+
+        # Build impact data
+        impact_data = {
+            'skill': skill_name,
+            'demand': {
+                'jobCount': jobs_with_skill,
+                'trend': 'high' if jobs_with_skill > 100 else 'medium' if jobs_with_skill > 50 else 'low',
+                'demandScore': min(100, jobs_with_skill)  # Normalize to 0-100
+            },
+            'salary': {
+                'averageIncrease': 15,  # Percentage - mock data
+                'currency': 'USD',
+                'range': {
+                    'min': 50000,
+                    'max': 120000
+                }
+            },
+            'relatedRoles': [
+                f"{skill_name} Developer",
+                f"Senior {skill_name} Engineer",
+                f"{skill_name} Specialist"
+            ],
+            'recommendedCourses': courses_data[:3],
+            'learningPath': {
+                'beginner': f"Introduction to {skill_name}",
+                'intermediate': f"Advanced {skill_name}",
+                'expert': f"{skill_name} Mastery"
+            },
+            'marketTrends': {
+                'popularity': 'increasing',
+                'futureOutlook': 'positive',
+                'industryAdoption': 'growing'
+            }
+        }
+
+        return jsonify(format_success_response(
+            data=impact_data,
+            message='Skill impact retrieved successfully'
+        )), 200
+
+    except Exception as e:
+        logger.error(f"Error getting skill impact: {str(e)}")
+        return jsonify(format_error_response(
+            'Failed to get skill impact',
+            500
+        )), 500
