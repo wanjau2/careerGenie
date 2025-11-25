@@ -208,7 +208,7 @@ class Application:
     """Job application model with database operations."""
 
     @staticmethod
-    def create_application(user_id, job_id, application_data=None):
+    def create_application(user_id, job_id, application_data=None, apply_url=None):
         """
         Create a job application.
 
@@ -216,6 +216,7 @@ class Application:
             user_id: User ID
             job_id: Job ID
             application_data: Optional application data (cover letter, etc.)
+            apply_url: URL to apply for the job on company website
 
         Returns:
             ObjectId: Created application ID
@@ -230,6 +231,7 @@ class Application:
         app_data = {
             'userId': user_id,
             'jobId': job_id,
+            'applyUrl': apply_url,
             'status': 'applied',
             'appliedAt': datetime.utcnow(),
             'applicationData': application_data or {},

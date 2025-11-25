@@ -15,7 +15,7 @@ class AutoApplyService:
     def __init__(self):
         self.gemini_service = GeminiService()
 
-    def apply_to_job_automatically(self, user_id, job_id, job_data, user_profile=None):
+    def apply_to_job_automatically(self, user_id, job_id, job_data, user_profile=None, resume_mode='smartMode'):
         """
         Automatically apply to a job when a paid user swipes right.
 
@@ -30,6 +30,7 @@ class AutoApplyService:
             job_id: Job ID
             job_data: Job details dictionary
             user_profile: Optional user profile (if already fetched)
+            resume_mode: Resume application mode ('defaultResume', 'customizeEach', 'smartMode')
 
         Returns:
             dict: Result with success status and details
@@ -44,9 +45,9 @@ class AutoApplyService:
                         'error': 'User profile not found'
                     }
 
-            # Get user's selected resume from preferences
-            # The resume is set in the filter modal
-            selected_resume = self._get_selected_resume(user_profile)
+            # Get user's selected resume based on resume mode
+            # Resume mode is set in the filter modal
+            selected_resume = self._get_selected_resume(user_profile, resume_mode, job_data)
 
             if not selected_resume:
                 logger.warning(f"No resume found for user {user_id}. Applying without custom resume.")
@@ -88,10 +89,15 @@ class AutoApplyService:
 
             # Step 4: Create application record
             logger.info(f"Creating application record for user {user_id} and job {job_id}")
+
+            # Get apply URL from job data
+            apply_url = job_data.get('applyUrl') or job_data.get('applyLink')
+
             app_id = Application.create_application(
                 user_id,
                 job_id,
-                application_data
+                application_data,
+                apply_url
             )
 
             # Step 5: Update user analytics
@@ -122,41 +128,91 @@ class AutoApplyService:
                 'error': str(e)
             }
 
-    def _get_selected_resume(self, user_profile):
+    def _get_selected_resume(self, user_profile, resume_mode='smartMode', job_data=None):
         """
-        Get the user's selected resume from their preferences.
-        The resume selection is stored in user preferences (set in filter modal).
+        Get the user's selected resume based on resume mode from filter modal.
+
+        Resume modes:
+        - defaultResume: Always use the default resume
+        - customizeEach: Use job-type-specific resume if available
+        - smartMode: AI selects best resume (for now, defaults to default resume)
 
         Args:
             user_profile: User profile dictionary
+            resume_mode: Resume selection mode from filter modal
+            job_data: Job details for customization decisions
 
         Returns:
             str or dict: Resume data or file path
         """
-        # Check if user has enhanced profile with resumes
-        if 'resumes' in user_profile:
-            resumes = user_profile['resumes']
+        if 'resumes' not in user_profile:
+            # Check basic profile for resume
+            if 'profile' in user_profile:
+                profile = user_profile['profile']
+                if profile.get('resume'):
+                    return profile['resume']
+            return None
 
-            # Check for default/selected version
+        resumes = user_profile['resumes']
+
+        # Mode 1: Default Resume - always use the same resume
+        if resume_mode == 'defaultResume':
+            default_version = resumes.get('defaultVersion')
+            if default_version:
+                return default_version
+            # Fall back to parsed or original
+            return resumes.get('parsed') or resumes.get('original')
+
+        # Mode 2: Customize Each - look for job-type specific resumes
+        elif resume_mode == 'customizeEach':
+            if job_data:
+                # Use ResumeVariation model to find job-type specific variation
+                from models.resume_variation import ResumeVariation
+
+                user_id = user_profile.get('_id')
+                job_type = job_data.get('jobType') or job_data.get('employmentType', '').lower()
+
+                # Get variations for this job type
+                variations = ResumeVariation.get_user_variations(
+                    user_id,
+                    job_type=job_type
+                )
+
+                if variations:
+                    logger.info(f"Found {len(variations)} variations for job type: {job_type}")
+                    # Use the most recent variation
+                    best_variation = variations[0]
+                    return best_variation.get('tailoredResume')
+
+            # Fall back to default if no specific version exists
+            logger.info(f"No job-type specific resume found, using default")
+            return resumes.get('defaultVersion') or resumes.get('parsed') or resumes.get('original')
+
+        # Mode 3: Smart Mode - AI selects best resume variation
+        else:  # smartMode
+            logger.info(f"Smart mode active - finding best resume variation")
+
+            # Use ResumeVariation model to find best matching variation
+            from models.resume_variation import ResumeVariation
+
+            user_id = user_profile.get('_id')
+
+            if job_data:
+                best_variation = ResumeVariation.find_best_variation_for_job(user_id, job_data)
+
+                if best_variation:
+                    logger.info(f"Smart mode selected variation with score: {best_variation.get('metrics', {}).get('matchScore', 0)}")
+                    return best_variation.get('tailoredResume')
+                else:
+                    logger.info("No variations found - using default resume")
+
+            # Fall back to default
             default_version = resumes.get('defaultVersion')
             if default_version:
                 return default_version
 
-            # Fall back to parsed resume
-            if resumes.get('parsed'):
-                return resumes['parsed']
-
-            # Fall back to original uploaded resume
-            if resumes.get('original'):
-                return resumes['original']
-
-        # Check basic profile for resume
-        if 'profile' in user_profile:
-            profile = user_profile['profile']
-            if profile.get('resume'):
-                return profile['resume']
-
-        return None
+            # Fall back chain
+            return resumes.get('parsed') or resumes.get('original')
 
     def _generate_cover_letter(self, job_data, user_profile):
         """

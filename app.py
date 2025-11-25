@@ -31,6 +31,7 @@ from routes.subscription import subscription_bp
 from routes.ads import ads_bp
 from routes.email import email_bp
 from routes.documents import documents_bp
+from routes.resume_variations import resume_variations_bp
 
 # Import utilities
 from utils.helpers import format_error_response
@@ -425,6 +426,7 @@ def register_blueprints(app):
     app.register_blueprint(subscription_bp)
     app.register_blueprint(ads_bp)
     app.register_blueprint(email_bp)
+    app.register_blueprint(resume_variations_bp)
 
     app.logger.info("Blueprints registered")
 

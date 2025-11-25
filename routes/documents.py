@@ -123,11 +123,20 @@ def generate_cover_letter():
             ))
 
         if job_id:
-            # Fetch job from database/API
-            # For now, return error if jobData not provided
-            return jsonify(format_error_response(
-                "Job fetching not implemented. Please provide jobData directly", 400
-            ))
+            # Fetch job from database
+            from models.job import Job
+            from utils.helpers import is_valid_object_id
+
+            if not is_valid_object_id(job_id):
+                return jsonify(format_error_response("Invalid job ID", 400))
+
+            job = Job.find_by_id(job_id)
+
+            if not job:
+                return jsonify(format_error_response("Job not found", 404))
+
+            # Use fetched job data
+            job_data = job
 
         # Validate job data
         if not job_data.get('title') or not job_data.get('company'):

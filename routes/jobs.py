@@ -6,6 +6,7 @@ from bson import ObjectId
 from models.job import Job
 from models.swipe import Swipe, Application
 from models.user import User
+from models.user_enhanced import EnhancedUser
 from utils.helpers import (
     format_error_response,
     serialize_document,
@@ -321,6 +322,18 @@ def swipe_job(job_id):
         match_score = data.get('matchScore')
         Swipe.record_swipe(user_id, job_id, action, match_score)
 
+        # Update analytics for swipe action
+        try:
+            if action in ['like', 'superlike']:
+                EnhancedUser.increment_analytics(user_id, 'totalLikes')
+            elif action == 'dislike':
+                EnhancedUser.increment_analytics(user_id, 'totalDislikes')
+
+            # Increment total swipes
+            EnhancedUser.increment_analytics(user_id, 'totalSwipes')
+        except Exception as analytics_error:
+            logger.warning(f"Failed to update swipe analytics: {analytics_error}")
+
         # NEW: Auto-apply for paid users on like/superlike
         if action in ['like', 'superlike']:
             user = User.find_by_id(user_id)
@@ -332,12 +345,16 @@ def swipe_job(job_id):
                 # Trigger auto-apply workflow
                 from services.auto_apply_service import AutoApplyService
 
+                # Get resume mode from request (set in filter modal)
+                resume_mode = data.get('resumeMode', 'smartMode')
+
                 auto_apply = AutoApplyService()
                 apply_result = auto_apply.apply_to_job_automatically(
                     user_id=user_id,
                     job_id=job_id,
                     job_data=job,
-                    user_profile=user
+                    user_profile=user,
+                    resume_mode=resume_mode
                 )
 
                 if apply_result['success']:
@@ -369,58 +386,6 @@ def swipe_job(job_id):
             'action': action,
             'jobId': job_id,
             'autoApplied': False
-        }), 200
-
-    except Exception as e:
-        return jsonify(format_error_response(f"Server error: {str(e)}", 500))
-
-
-@jobs_bp.route('/liked', methods=['GET'])
-@jwt_required()
-def get_liked_jobs():
-    """
-    Get jobs that user has liked.
-
-    Query parameters:
-    - page: Page number (default: 1)
-    - pageSize: Items per page (default: 20)
-
-    Returns:
-        JSON response with liked jobs
-    """
-    try:
-        user_id = get_jwt_identity()
-
-        # Get pagination params
-        page = request.args.get('page', 1, type=int)
-        page_size = request.args.get('pageSize', 20, type=int)
-
-        is_valid, (validated_page, validated_page_size), error = validate_pagination_params(
-            page, page_size
-        )
-
-        if not is_valid:
-            return jsonify(format_error_response(error, 400))
-
-        # Calculate pagination
-        skip, limit = calculate_skip_limit(validated_page, validated_page_size)
-
-        # Get liked job IDs
-        liked_job_ids = Swipe.get_liked_jobs(user_id, skip, limit)
-
-        # Get job details
-        from config.database import get_jobs_collection
-        jobs_collection = get_jobs_collection()
-
-        jobs = list(jobs_collection.find({'_id': {'$in': liked_job_ids}}))
-        jobs_data = serialize_documents(jobs)
-
-        # Get total count
-        total_count = Swipe.get_swipe_count(user_id, action='like')
-
-        return jsonify({
-            'jobs': jobs_data,
-            'meta': get_pagination_metadata(total_count, validated_page, validated_page_size)
         }), 200
 
     except Exception as e:
@@ -530,8 +495,18 @@ def apply_to_job(job_id):
         # Get application data
         data = request.get_json() or {}
 
+        # Get apply URL from job
+        apply_url = job.get('applyUrl') or job.get('applyLink')
+
         # Create application
-        app_id = Application.create_application(user_id, job_id, data)
+        app_id = Application.create_application(user_id, job_id, data, apply_url)
+
+        # Update analytics for manual application
+        try:
+            EnhancedUser.increment_analytics(user_id, 'manualApplications')
+            EnhancedUser.increment_analytics(user_id, 'totalApplications')
+        except Exception as analytics_error:
+            logger.warning(f"Failed to update application analytics: {analytics_error}")
 
         return jsonify({
             'message': 'Application submitted successfully',

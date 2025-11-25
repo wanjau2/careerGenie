@@ -113,6 +113,8 @@ def complete_onboarding():
     - preferences: Preferences object {jobTypes, salaryMin, salaryMax, autoApplyEnabled}
     - bio: Optional bio/summary
 
+    IMPORTANT: User MUST have uploaded a resume before completing onboarding.
+
     Returns:
         JSON with completion status
     """
@@ -121,6 +123,25 @@ def complete_onboarding():
 
     if not data:
         return jsonify({'error': 'No data provided'}), 400
+
+    # CHECK: User must have uploaded a resume
+    user = EnhancedUser.find_by_id(user_id)
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+
+    # Verify resume has been uploaded and parsed
+    resumes = user.get('resumes', {})
+    has_resume = (
+        resumes.get('parsed') or
+        resumes.get('original') or
+        user.get('profile', {}).get('resume')
+    )
+
+    if not has_resume:
+        return jsonify({
+            'error': 'Resume required',
+            'message': 'Please upload your resume before completing onboarding. Your resume is essential for job matching and auto-apply features.'
+        }), 400
 
     # Save all onboarding data and mark as complete
     success = EnhancedUser.complete_onboarding_with_data(user_id, data)

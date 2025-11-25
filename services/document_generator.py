@@ -5,7 +5,7 @@ from datetime import datetime
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable
 from reportlab.lib import colors
 from docx import Document
 from docx.shared import Pt, RGBColor, Inches
@@ -472,9 +472,538 @@ Thank you for considering my application. I look forward to the possibility of d
         return filepath
 
     def _generate_classic_resume(self, user_data: Dict, format: str) -> str:
-        """Generate classic style resume (similar to modern for now)."""
-        return self._generate_modern_resume(user_data, format)
+        """Generate classic style resume - traditional, conservative format."""
+        if format == 'pdf':
+            return self._create_classic_resume_pdf(user_data)
+        else:
+            return self._create_classic_resume_docx(user_data)
 
     def _generate_minimal_resume(self, user_data: Dict, format: str) -> str:
-        """Generate minimal style resume (similar to modern for now)."""
-        return self._generate_modern_resume(user_data, format)
+        """Generate minimal style resume - clean, simple design."""
+        if format == 'pdf':
+            return self._create_minimal_resume_pdf(user_data)
+        else:
+            return self._create_minimal_resume_docx(user_data)
+
+    def _create_classic_resume_pdf(self, user_data: Dict) -> str:
+        """Create classic/traditional resume in PDF format."""
+        import tempfile
+
+        temp_dir = tempfile.gettempdir()
+        filename = f"resume_classic_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+        filepath = os.path.join(temp_dir, filename)
+
+        doc = SimpleDocTemplate(filepath, pagesize=letter)
+        story = []
+        styles = getSampleStyleSheet()
+
+        # Classic styles - traditional, serif fonts, black and white
+        title_style = ParagraphStyle(
+            'ClassicTitle',
+            parent=styles['Heading1'],
+            fontSize=18,
+            textColor=colors.black,
+            spaceAfter=3,
+            alignment=1,  # Center
+            fontName='Times-Bold'
+        )
+
+        heading_style = ParagraphStyle(
+            'ClassicHeading',
+            parent=styles['Heading2'],
+            fontSize=12,
+            textColor=colors.black,
+            spaceAfter=6,
+            spaceBefore=12,
+            fontName='Times-Bold',
+            underline=True
+        )
+
+        body_style = ParagraphStyle(
+            'ClassicBody',
+            parent=styles['Normal'],
+            fontSize=10,
+            fontName='Times-Roman'
+        )
+
+        # Personal Info
+        personal = user_data.get('personalInfo', {})
+        name = personal.get('fullName', 'Your Name')
+        story.append(Paragraph(name.upper(), title_style))
+
+        # Contact info in classic format
+        contact_lines = []
+        if personal.get('email'):
+            contact_lines.append(personal['email'])
+        if personal.get('phone'):
+            contact_lines.append(personal['phone'])
+        if personal.get('location'):
+            location = personal['location']
+            if isinstance(location, dict):
+                loc_parts = []
+                if location.get('city'): loc_parts.append(location['city'])
+                if location.get('state'): loc_parts.append(location['state'])
+                contact_lines.append(', '.join(loc_parts))
+            else:
+                contact_lines.append(str(location))
+
+        for line in contact_lines:
+            p = Paragraph(line, body_style)
+            p.alignment = 1  # Center
+            story.append(p)
+
+        story.append(Spacer(1, 0.15*inch))
+        story.append(HRFlowable(width="100%", thickness=1, color=colors.black))
+        story.append(Spacer(1, 0.1*inch))
+
+        # Summary/Objective
+        summary = user_data.get('summary', '')
+        if summary:
+            story.append(Paragraph('OBJECTIVE', heading_style))
+            story.append(Paragraph(summary, body_style))
+            story.append(Spacer(1, 0.15*inch))
+
+        # Work Experience
+        experiences = user_data.get('experiences', user_data.get('workExperience', []))
+        if experiences:
+            story.append(Paragraph('PROFESSIONAL EXPERIENCE', heading_style))
+            for exp in experiences:
+                title = exp.get('title', 'Position')
+                company = exp.get('company', 'Company')
+                start = exp.get('startDate', '')
+                end = exp.get('endDate', 'Present')
+
+                # Job title and dates on same line
+                job_header = f"<b>{title}</b>, {company}"
+                story.append(Paragraph(job_header, body_style))
+                story.append(Paragraph(f"<i>{start} - {end}</i>", body_style))
+
+                if exp.get('description'):
+                    story.append(Paragraph(exp['description'], body_style))
+
+                if exp.get('achievements'):
+                    for achievement in exp['achievements']:
+                        story.append(Paragraph(f"• {achievement}", body_style))
+
+                story.append(Spacer(1, 0.1*inch))
+
+        # Education
+        education = user_data.get('education', [])
+        if education:
+            story.append(Paragraph('EDUCATION', heading_style))
+            for edu in education:
+                degree = edu.get('degree', 'Degree')
+                institution = edu.get('institution', 'Institution')
+                grad_date = edu.get('endDate', edu.get('graduationDate', ''))
+
+                story.append(Paragraph(f"<b>{degree}</b>", body_style))
+                story.append(Paragraph(f"{institution}, {grad_date}", body_style))
+
+                if edu.get('gpa'):
+                    story.append(Paragraph(f"GPA: {edu['gpa']}", body_style))
+
+                story.append(Spacer(1, 0.1*inch))
+
+        # Skills
+        skills = user_data.get('skills', [])
+        if skills:
+            story.append(Paragraph('SKILLS', heading_style))
+            # Format skills nicely
+            if isinstance(skills[0], dict):
+                skills_text = ', '.join([s.get('name', s.get('skill', '')) for s in skills[:20]])
+            else:
+                skills_text = ', '.join(skills[:20])
+            story.append(Paragraph(skills_text, body_style))
+
+        # Certifications
+        certifications = user_data.get('certifications', [])
+        if certifications:
+            story.append(Spacer(1, 0.1*inch))
+            story.append(Paragraph('CERTIFICATIONS', heading_style))
+            for cert in certifications:
+                if isinstance(cert, dict):
+                    cert_name = cert.get('name', cert.get('certification', ''))
+                    issuer = cert.get('issuer', '')
+                    story.append(Paragraph(f"• {cert_name}" + (f" - {issuer}" if issuer else ""), body_style))
+                else:
+                    story.append(Paragraph(f"• {cert}", body_style))
+
+        doc.build(story)
+        return filepath
+
+    def _create_classic_resume_docx(self, user_data: Dict) -> str:
+        """Create classic resume in DOCX format."""
+        import tempfile
+
+        temp_dir = tempfile.gettempdir()
+        filename = f"resume_classic_{datetime.now().strftime('%Y%m%d_%H%M%S')}.docx"
+        filepath = os.path.join(temp_dir, filename)
+
+        doc = Document()
+
+        # Personal Info - centered, traditional
+        personal = user_data.get('personalInfo', {})
+        name = personal.get('fullName', 'Your Name')
+
+        name_para = doc.add_paragraph(name.upper())
+        name_para.runs[0].bold = True
+        name_para.runs[0].font.size = Pt(16)
+        name_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+        # Contact info
+        if personal.get('email'):
+            p = doc.add_paragraph(personal['email'])
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        if personal.get('phone'):
+            p = doc.add_paragraph(personal['phone'])
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        if personal.get('location'):
+            location = personal['location']
+            if isinstance(location, dict):
+                loc_parts = []
+                if location.get('city'): loc_parts.append(location['city'])
+                if location.get('state'): loc_parts.append(location['state'])
+                p = doc.add_paragraph(', '.join(loc_parts))
+            else:
+                p = doc.add_paragraph(str(location))
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+        doc.add_paragraph('_' * 80)  # Horizontal line
+
+        # Summary/Objective
+        summary = user_data.get('summary', '')
+        if summary:
+            heading = doc.add_heading('OBJECTIVE', level=2)
+            heading.runs[0].font.size = Pt(12)
+            heading.runs[0].underline = True
+            doc.add_paragraph(summary)
+
+        # Work Experience
+        experiences = user_data.get('experiences', user_data.get('workExperience', []))
+        if experiences:
+            heading = doc.add_heading('PROFESSIONAL EXPERIENCE', level=2)
+            heading.runs[0].font.size = Pt(12)
+            heading.runs[0].underline = True
+
+            for exp in experiences:
+                title = exp.get('title', 'Position')
+                company = exp.get('company', 'Company')
+                dates = f"{exp.get('startDate', '')} - {exp.get('endDate', 'Present')}"
+
+                p = doc.add_paragraph()
+                p.add_run(f"{title}, {company}").bold = True
+                doc.add_paragraph(dates).italic = True
+
+                if exp.get('description'):
+                    doc.add_paragraph(exp['description'])
+
+                if exp.get('achievements'):
+                    for achievement in exp['achievements']:
+                        doc.add_paragraph(f"• {achievement}", style='List Bullet')
+
+        # Education
+        education = user_data.get('education', [])
+        if education:
+            heading = doc.add_heading('EDUCATION', level=2)
+            heading.runs[0].font.size = Pt(12)
+            heading.runs[0].underline = True
+
+            for edu in education:
+                degree = edu.get('degree', 'Degree')
+                institution = edu.get('institution', 'Institution')
+                grad_date = edu.get('endDate', edu.get('graduationDate', ''))
+
+                p = doc.add_paragraph()
+                p.add_run(degree).bold = True
+                doc.add_paragraph(f"{institution}, {grad_date}")
+
+                if edu.get('gpa'):
+                    doc.add_paragraph(f"GPA: {edu['gpa']}")
+
+        # Skills
+        skills = user_data.get('skills', [])
+        if skills:
+            heading = doc.add_heading('SKILLS', level=2)
+            heading.runs[0].font.size = Pt(12)
+            heading.runs[0].underline = True
+
+            if isinstance(skills[0], dict):
+                skills_text = ', '.join([s.get('name', s.get('skill', '')) for s in skills[:20]])
+            else:
+                skills_text = ', '.join(skills[:20])
+            doc.add_paragraph(skills_text)
+
+        # Certifications
+        certifications = user_data.get('certifications', [])
+        if certifications:
+            heading = doc.add_heading('CERTIFICATIONS', level=2)
+            heading.runs[0].font.size = Pt(12)
+            heading.runs[0].underline = True
+
+            for cert in certifications:
+                if isinstance(cert, dict):
+                    cert_name = cert.get('name', cert.get('certification', ''))
+                    issuer = cert.get('issuer', '')
+                    doc.add_paragraph(f"• {cert_name}" + (f" - {issuer}" if issuer else ""), style='List Bullet')
+                else:
+                    doc.add_paragraph(f"• {cert}", style='List Bullet')
+
+        doc.save(filepath)
+        return filepath
+
+    def _create_minimal_resume_pdf(self, user_data: Dict) -> str:
+        """Create minimal/clean resume in PDF format."""
+        import tempfile
+
+        temp_dir = tempfile.gettempdir()
+        filename = f"resume_minimal_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+        filepath = os.path.join(temp_dir, filename)
+
+        doc = SimpleDocTemplate(filepath, pagesize=letter,
+                              leftMargin=1*inch, rightMargin=1*inch,
+                              topMargin=0.75*inch, bottomMargin=0.75*inch)
+        story = []
+        styles = getSampleStyleSheet()
+
+        # Minimal styles - clean, lots of whitespace, subtle colors
+        title_style = ParagraphStyle(
+            'MinimalTitle',
+            parent=styles['Heading1'],
+            fontSize=28,
+            textColor=colors.HexColor('#1a1a1a'),
+            spaceAfter=4,
+            fontName='Helvetica-Bold',
+            leading=32
+        )
+
+        subtitle_style = ParagraphStyle(
+            'MinimalSubtitle',
+            parent=styles['Normal'],
+            fontSize=10,
+            textColor=colors.HexColor('#666666'),
+            spaceAfter=20,
+            fontName='Helvetica'
+        )
+
+        heading_style = ParagraphStyle(
+            'MinimalHeading',
+            parent=styles['Heading2'],
+            fontSize=11,
+            textColor=colors.HexColor('#333333'),
+            spaceAfter=10,
+            spaceBefore=20,
+            fontName='Helvetica-Bold',
+            letterSpacing=1
+        )
+
+        # Personal Info - minimal, left-aligned
+        personal = user_data.get('personalInfo', {})
+        name = personal.get('fullName', 'Your Name')
+        story.append(Paragraph(name, title_style))
+
+        # Contact - one line, minimal
+        contact_parts = []
+        if personal.get('email'):
+            contact_parts.append(personal['email'])
+        if personal.get('phone'):
+            contact_parts.append(personal['phone'])
+        if personal.get('location'):
+            location = personal['location']
+            if isinstance(location, dict):
+                if location.get('city'):
+                    contact_parts.append(location['city'])
+            else:
+                contact_parts.append(str(location))
+
+        if contact_parts:
+            story.append(Paragraph('  •  '.join(contact_parts), subtitle_style))
+
+        # Summary - no label, just content
+        summary = user_data.get('summary', '')
+        if summary:
+            story.append(Paragraph(summary, styles['Normal']))
+            story.append(Spacer(1, 0.3*inch))
+
+        # Experience - minimal formatting
+        experiences = user_data.get('experiences', user_data.get('workExperience', []))
+        if experiences:
+            story.append(Paragraph('EXPERIENCE', heading_style))
+
+            for exp in experiences:
+                title = exp.get('title', 'Position')
+                company = exp.get('company', 'Company')
+                dates = f"{exp.get('startDate', '')} – {exp.get('endDate', 'Present')}"
+
+                # Title and company
+                job_style = ParagraphStyle('JobTitle', parent=styles['Normal'],
+                                         fontSize=11, fontName='Helvetica-Bold')
+                story.append(Paragraph(title, job_style))
+
+                # Company and dates on same line
+                company_style = ParagraphStyle('Company', parent=styles['Normal'],
+                                             fontSize=10, textColor=colors.HexColor('#666666'))
+                story.append(Paragraph(f"{company}  •  {dates}", company_style))
+
+                if exp.get('description'):
+                    story.append(Spacer(1, 0.05*inch))
+                    story.append(Paragraph(exp['description'], styles['Normal']))
+
+                if exp.get('achievements'):
+                    for achievement in exp['achievements']:
+                        story.append(Paragraph(f"• {achievement}", styles['Normal']))
+
+                story.append(Spacer(1, 0.15*inch))
+
+        # Education
+        education = user_data.get('education', [])
+        if education:
+            story.append(Paragraph('EDUCATION', heading_style))
+
+            for edu in education:
+                degree = edu.get('degree', 'Degree')
+                institution = edu.get('institution', 'Institution')
+                grad_date = edu.get('endDate', edu.get('graduationDate', ''))
+
+                degree_style = ParagraphStyle('Degree', parent=styles['Normal'],
+                                            fontSize=11, fontName='Helvetica-Bold')
+                story.append(Paragraph(degree, degree_style))
+
+                school_style = ParagraphStyle('School', parent=styles['Normal'],
+                                            fontSize=10, textColor=colors.HexColor('#666666'))
+                story.append(Paragraph(f"{institution}  •  {grad_date}", school_style))
+
+                story.append(Spacer(1, 0.1*inch))
+
+        # Skills - clean list
+        skills = user_data.get('skills', [])
+        if skills:
+            story.append(Paragraph('SKILLS', heading_style))
+
+            if isinstance(skills[0], dict):
+                skills_list = [s.get('name', s.get('skill', '')) for s in skills[:15]]
+            else:
+                skills_list = skills[:15]
+
+            skills_text = '  •  '.join(skills_list)
+            story.append(Paragraph(skills_text, styles['Normal']))
+
+        doc.build(story)
+        return filepath
+
+    def _create_minimal_resume_docx(self, user_data: Dict) -> str:
+        """Create minimal resume in DOCX format."""
+        import tempfile
+
+        temp_dir = tempfile.gettempdir()
+        filename = f"resume_minimal_{datetime.now().strftime('%Y%m%d_%H%M%S')}.docx"
+        filepath = os.path.join(temp_dir, filename)
+
+        doc = Document()
+
+        # Set minimal margins
+        sections = doc.sections
+        for section in sections:
+            section.top_margin = Inches(0.75)
+            section.bottom_margin = Inches(0.75)
+            section.left_margin = Inches(1)
+            section.right_margin = Inches(1)
+
+        # Personal Info - clean, left-aligned
+        personal = user_data.get('personalInfo', {})
+        name = personal.get('fullName', 'Your Name')
+
+        name_para = doc.add_paragraph(name)
+        name_para.runs[0].bold = True
+        name_para.runs[0].font.size = Pt(24)
+
+        # Contact - one line
+        contact_parts = []
+        if personal.get('email'):
+            contact_parts.append(personal['email'])
+        if personal.get('phone'):
+            contact_parts.append(personal['phone'])
+        if personal.get('location'):
+            location = personal['location']
+            if isinstance(location, dict) and location.get('city'):
+                contact_parts.append(location['city'])
+            elif not isinstance(location, dict):
+                contact_parts.append(str(location))
+
+        if contact_parts:
+            contact_para = doc.add_paragraph('  •  '.join(contact_parts))
+            contact_para.runs[0].font.size = Pt(9)
+            contact_para.runs[0].font.color.rgb = RGBColor(102, 102, 102)
+
+        doc.add_paragraph()  # Spacer
+
+        # Summary - no heading
+        summary = user_data.get('summary', '')
+        if summary:
+            doc.add_paragraph(summary)
+            doc.add_paragraph()  # Spacer
+
+        # Experience
+        experiences = user_data.get('experiences', user_data.get('workExperience', []))
+        if experiences:
+            heading = doc.add_paragraph('EXPERIENCE')
+            heading.runs[0].bold = True
+            heading.runs[0].font.size = Pt(11)
+
+            for exp in experiences:
+                title = exp.get('title', 'Position')
+                company = exp.get('company', 'Company')
+                dates = f"{exp.get('startDate', '')} – {exp.get('endDate', 'Present')}"
+
+                # Title
+                p = doc.add_paragraph(title)
+                p.runs[0].bold = True
+                p.runs[0].font.size = Pt(11)
+
+                # Company and dates
+                p = doc.add_paragraph(f"{company}  •  {dates}")
+                p.runs[0].font.size = Pt(10)
+                p.runs[0].font.color.rgb = RGBColor(102, 102, 102)
+
+                if exp.get('description'):
+                    doc.add_paragraph(exp['description'])
+
+                if exp.get('achievements'):
+                    for achievement in exp['achievements']:
+                        doc.add_paragraph(f"• {achievement}")
+
+        # Education
+        education = user_data.get('education', [])
+        if education:
+            doc.add_paragraph()  # Spacer
+            heading = doc.add_paragraph('EDUCATION')
+            heading.runs[0].bold = True
+            heading.runs[0].font.size = Pt(11)
+
+            for edu in education:
+                degree = edu.get('degree', 'Degree')
+                institution = edu.get('institution', 'Institution')
+                grad_date = edu.get('endDate', edu.get('graduationDate', ''))
+
+                p = doc.add_paragraph(degree)
+                p.runs[0].bold = True
+
+                p = doc.add_paragraph(f"{institution}  •  {grad_date}")
+                p.runs[0].font.size = Pt(10)
+                p.runs[0].font.color.rgb = RGBColor(102, 102, 102)
+
+        # Skills
+        skills = user_data.get('skills', [])
+        if skills:
+            doc.add_paragraph()  # Spacer
+            heading = doc.add_paragraph('SKILLS')
+            heading.runs[0].bold = True
+            heading.runs[0].font.size = Pt(11)
+
+            if isinstance(skills[0], dict):
+                skills_text = '  •  '.join([s.get('name', s.get('skill', '')) for s in skills[:15]])
+            else:
+                skills_text = '  •  '.join(skills[:15])
+            doc.add_paragraph(skills_text)
+
+        doc.save(filepath)
+        return filepath
