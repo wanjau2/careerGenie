@@ -1,7 +1,7 @@
 """Resume variation model for storing and managing multiple resume versions."""
 from datetime import datetime
 from bson import ObjectId
-from config.database import get_db
+from config.database import get_database
 
 
 class ResumeVariation:
@@ -10,7 +10,7 @@ class ResumeVariation:
     @staticmethod
     def get_variations_collection():
         """Get the resume variations collection."""
-        db = get_db()
+        db = get_database()
         return db.resume_variations
 
     @staticmethod
